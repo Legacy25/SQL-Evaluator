@@ -1,12 +1,31 @@
+/*
+ * SQL Evaluator Engine
+ * Authors: Arindam Nandi
+ * 			Saptarshi Bhattacharjee
+ * 			Sayaritra Pal
+ * 
+ * Copyright 2015
+ */
+
 package edu.buffalo.cse562;
 
 public class Main {
-
+	
+	public static final int INVALID_ARGUMENTS = 1;
+	
 	public static void main(String[] args) {
-		System.out.println("We, the members of our team, agree that we will " +
-				"not submit any code that we have not written ourselves, " +
-				"share our code with anyone outside of our group, or use " +
-				"code that we have not written ourselves as a reference.");
+
+		/*
+		 * CLI argument parsing code
+		 */
+		
+		if(args.length < 3) {
+			System.err.println("Usage: Main.java --data [DATA FOLDER] sql_file(s).sql");
+			System.exit(INVALID_ARGUMENTS);
+		}
+
+		
+		
 	}
 
 }
