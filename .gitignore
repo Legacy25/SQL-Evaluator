@@ -6,6 +6,7 @@
 *.exe
 *.o
 *.so
+.classpath
  
 # Packages #
 ############
@@ -35,7 +36,8 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
-arindam@ary-laptop:~/Documents/DB/team15$ cat .gitignore
+*~
+
 # Compiled source #
 ###################
 *.com
@@ -44,7 +46,6 @@ arindam@ary-laptop:~/Documents/DB/team15$ cat .gitignore
 *.exe
 *.o
 *.so
-*.classpath
  
 # Packages #
 ############
