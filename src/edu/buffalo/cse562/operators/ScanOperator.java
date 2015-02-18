@@ -5,15 +5,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.SQLException;
 
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
+import net.sf.jsqlparser.expression.LeafValue;
+import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.StringValue;
 import edu.buffalo.cse562.schema.Schema;
 
 public class ScanOperator implements Operator {
 
-	Schema schema;
-	BufferedReader br;
-	File f;
-	
+	private Schema schema;
+	private BufferedReader br;
+	private File f;
 	
 	public ScanOperator(Schema schema) {
 		this.schema = schema;
@@ -23,7 +28,7 @@ public class ScanOperator implements Operator {
 	}
 	
 	@Override
-	public Long[] readOneTuple() {
+	public LeafValue[] readOneTuple() {
 		if(br == null) {
 			return null;
 		}
@@ -34,16 +39,36 @@ public class ScanOperator implements Operator {
 				return null;
 			}
 			String cols[] = line.split("\\|");
-			Long ret[] = new Long[cols.length];
+			LeafValue ret[] = new LeafValue[cols.length];
 			
 			for(int i=0; i<cols.length; i++) {
-				ret[i] = Long.decode(cols[i]);
+				String type = schema.getColumns().get(i).getColumnType();
+				switch(type) {
+				case "int":
+					ret[i] = new LongValue(cols[i]);
+					break;
+				case "decimal":
+					ret[i] = new DoubleValue(cols[i]);
+					break;
+				case "char":
+				case "varchar":
+				case "string":
+					ret[i] = new StringValue(cols[i]);
+					break;
+				case "date":
+					ret[i] = new DateValue(cols[i]);
+					break;
+				default:
+					throw new SQLException();
+				}
 			}
 			
 			return ret;
 			
 		} catch (IOException e) {
 			System.err.println("IOException on Scan Operator");
+		} catch (SQLException e) {
+			System.err.println("SQLException on Scan Operator");
 		}
 		return null;
 	}

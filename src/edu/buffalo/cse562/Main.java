@@ -24,9 +24,10 @@ import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.ProjectionOperator;
 import edu.buffalo.cse562.operators.ScanOperator;
 import edu.buffalo.cse562.operators.SelectionOperator;
+import edu.buffalo.cse562.schema.ColumnWTyp;
 import edu.buffalo.cse562.schema.Schema;
+import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.parser.*;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.*;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -35,13 +36,14 @@ import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.Union;
 
 public class Main {	
-	
+
+	private static HashMap<String, Schema> tables = new HashMap<String, Schema>();
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String[] args) {
 
 		ArrayList<String> dataDirs = new ArrayList<String>();
 		ArrayList<File> sqlFiles = new ArrayList<File>();
-		HashMap<String, Schema> tables = new HashMap<String, Schema>();
 		ParseTree<Operator> parseTree = new ParseTree<Operator>();
 		
 		
@@ -85,7 +87,7 @@ public class Main {
 						Iterator i = cTable.getColumnDefinitions().listIterator();
 						while(i.hasNext()) {
 							String colNameAndType[] = i.next().toString().split(" ");
-							Column c = new Column(cTable.getTable(), colNameAndType[0]);
+							ColumnWTyp c = new ColumnWTyp(cTable.getTable(), colNameAndType[0], colNameAndType[1]);
 							schema.addColumn(c);
 						}
 						tables.put(tableName, schema);
@@ -175,13 +177,13 @@ public class Main {
 		if(parseTree.getRoot() == null)
 			return;
 		
-		Long res[];
+		LeafValue res[];
 		while((res = parseTree.getRoot().readOneTuple()) != null) {
 			display(res);
 		}
 	}
 	
-	public static void display(Long res[]) {
+	public static void display(LeafValue res[]) {
 		
 		boolean flag = false;
 		
@@ -196,5 +198,9 @@ public class Main {
 		}
 		
 		System.out.println();
+	}
+	
+	public static HashMap<String, Schema> getTableSchemas() {
+		return tables;
 	}
 }

@@ -1,14 +1,15 @@
 package edu.buffalo.cse562.operators;
 
-import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.expression.LeafValue;
+import edu.buffalo.cse562.schema.ColumnWTyp;
 import edu.buffalo.cse562.schema.Schema;
 
 public class JoinOperator implements Operator {
 
-	Schema schema;
-	Operator child1, child2;
-	Long next1[];
-	Long next2[];
+	private Schema schema;
+	private Operator child1, child2;
+	private LeafValue next1[];
+	private LeafValue next2[];
 	boolean flag;
 
 	public JoinOperator(Operator child1, Operator child2) {
@@ -23,16 +24,16 @@ public class JoinOperator implements Operator {
 	}
 	
 	private void generateColumns() {
-		for(Column c:child1.getSchema().getColumns()) {
+		for(ColumnWTyp c:child1.getSchema().getColumns()) {
 			schema.addColumn(c);
 		}
-		for(Column c:child2.getSchema().getColumns()) {
+		for(ColumnWTyp c:child2.getSchema().getColumns()) {
 			schema.addColumn(c);
 		}
 	}
 	
 	@Override
-	public Long[] readOneTuple() {
+	public LeafValue[] readOneTuple() {
 		
 		if(flag) {
 			flag = false;
@@ -50,7 +51,7 @@ public class JoinOperator implements Operator {
 		
 		int length = next1.length + next2.length;
 		
-		Long ret[] = new Long[length];
+		LeafValue ret[] = new LeafValue[length];
 		for(int i=0; i<length; i++) {
 			if(i<next1.length)
 				ret[i] = next1[i];
