@@ -16,7 +16,7 @@ public class Evaluate extends Eval {
 	private HashMap<String, Schema> tables;
 	
 	public Evaluate() {
-		tables = Main.getTableSchemas();
+		tables = ParseTreeGenerator.getTableSchemas();
 	}
 	
 	@Override
