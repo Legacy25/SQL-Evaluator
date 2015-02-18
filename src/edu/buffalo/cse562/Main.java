@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -27,6 +26,7 @@ import edu.buffalo.cse562.operators.ScanOperator;
 import edu.buffalo.cse562.operators.SelectionOperator;
 import edu.buffalo.cse562.schema.Schema;
 import net.sf.jsqlparser.parser.*;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.*;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -39,7 +39,7 @@ public class Main {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String[] args) {
 
-		ArrayList<File> dataFiles = new ArrayList<File>();
+		ArrayList<String> dataDirs = new ArrayList<String>();
 		ArrayList<File> sqlFiles = new ArrayList<File>();
 		HashMap<String, Schema> tables = new HashMap<String, Schema>();
 		ParseTree<Operator> parseTree = new ParseTree<Operator>();
@@ -51,14 +51,13 @@ public class Main {
 		
 		for(int i=0; i<args.length; i++) {
 			if(args[i].equals("--data")) {
-				dataFiles.addAll(0, new ArrayList<File>(Arrays.asList(new File(args[i+1]).listFiles())));
+				dataDirs.add(args[i+1]);
 				i++;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
 			}
 		}
-		
 		
 		
 		/*
@@ -75,22 +74,41 @@ public class Main {
 					if(statement instanceof CreateTable) {
 						CreateTable cTable = (CreateTable) statement;
 						String tableName = cTable.getTable().toString();
-						Schema schema = new Schema(tableName, "data/"+tableName.toLowerCase()+".dat");
+						String tableFile = findFile(dataDirs, tableName);
+						
+						if(tableFile == null) {
+							System.err.println("Table "+ tableName + " not found in any "
+									+ "of the specified directories!");
+							System.exit(1);
+						}
+						Schema schema = new Schema(tableName, tableFile);
+						Iterator i = cTable.getColumnDefinitions().listIterator();
+						while(i.hasNext()) {
+							String colNameAndType[] = i.next().toString().split(" ");
+							Column c = new Column(cTable.getTable(), colNameAndType[0]);
+							schema.addColumn(c);
+						}
 						tables.put(tableName, schema);
 					}
 					
 					else if(statement instanceof Select) {
+
 						SelectBody body = ((Select) statement).getSelectBody();
+						
 						if(body instanceof PlainSelect) {
+						
 							PlainSelect ps = (PlainSelect) body;
 							Schema schema = tables.get(ps.getFromItem().toString());
-							parseTree.insertRoot(new ScanOperator(schema.getTableFile()));
+							parseTree.insertRoot(new ScanOperator(schema));
 							
 							if(ps.getJoins() != null){
+							
 								Iterator i = ps.getJoins().iterator();
+								
 								while(i.hasNext()) {
+								
 									ParseTree<Operator> right = new ParseTree<Operator>(
-											new ScanOperator(tables.get(i.next().toString()).getTableFile()));
+											new ScanOperator(tables.get(i.next().toString())));
 
 									parseTree.insertRoot(new JoinOperator(parseTree.getLeft().getRoot(),
 											right.getRoot()));
@@ -99,12 +117,19 @@ public class Main {
 								}
 							}
 							
-							if(ps.getWhere() != null)
+							if(ps.getWhere() != null) {
+								
+								//System.out.println("Expr: " + ps.getWhere());
 								parseTree.insertRoot(new SelectionOperator(ps.getWhere(), parseTree.getLeft().getRoot()));
 							
+							}
+								
+							
 							if(ps.getSelectItems() != null) {
-								System.out.println(ps.getSelectItems().get(0));
+							
+								//System.out.println(ps.getSelectItems());
 								parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
+							
 							}
 								
 						}
@@ -131,6 +156,18 @@ public class Main {
 		evaluate(parseTree);
 	}
 	
+	private static String findFile(ArrayList<String> dataDirs, String tableName) {
+		for(String dDirs : dataDirs) {
+			File dir = new File(dDirs);
+			File files[] = dir.listFiles();
+			for(File f : files) {
+				if(f.getName().equalsIgnoreCase(tableName+".dat"))
+					return f.getAbsolutePath();
+			}
+		}
+		return null;
+	}
+
 	public static void evaluate(ParseTree<Operator> parseTree) {
 		if(parseTree == null)
 			return;

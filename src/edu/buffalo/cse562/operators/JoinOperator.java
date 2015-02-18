@@ -1,18 +1,34 @@
 package edu.buffalo.cse562.operators;
 
+import net.sf.jsqlparser.schema.Column;
+import edu.buffalo.cse562.schema.Schema;
+
 public class JoinOperator implements Operator {
 
+	Schema schema;
 	Operator child1, child2;
 	Long next1[];
 	Long next2[];
 	boolean flag;
 
 	public JoinOperator(Operator child1, Operator child2) {
+		
 		this.child1 = child1;
 		this.child2 = child2;
+		schema = new Schema(child1.getSchema().getTableName()+" JOIN "+child2.getSchema().getTableName(), "__mem__");
+		generateColumns();
 		next1 = null;
 		next2 = null;
 		flag = true;
+	}
+	
+	private void generateColumns() {
+		for(Column c:child1.getSchema().getColumns()) {
+			schema.addColumn(c);
+		}
+		for(Column c:child2.getSchema().getColumns()) {
+			schema.addColumn(c);
+		}
 	}
 	
 	@Override
@@ -50,6 +66,11 @@ public class JoinOperator implements Operator {
 		child1.reset();
 		child2.reset();
 		flag = true;
+	}
+
+	@Override
+	public Schema getSchema() {
+		return schema;
 	}
 
 }

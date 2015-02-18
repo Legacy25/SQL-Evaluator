@@ -3,6 +3,8 @@ package edu.buffalo.cse562.schema;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import net.sf.jsqlparser.schema.Column;
+
 public class Schema {
 
 	private String tableName;
@@ -12,6 +14,7 @@ public class Schema {
 	public Schema(String tableName, String tableFile) {
 		this.tableName = tableName;
 		this.tableFile = tableFile;
+		columns = new ArrayList<Column>();
 	}
 
 	public String getTableName() {
@@ -42,6 +45,11 @@ public class Schema {
 		this.columns.addAll(Arrays.asList(columns));
 	}
 	
-	
+	public String toString() {
+		
+		return "Schema for table " + tableName
+				+ "\nTable File: " + tableFile 
+				+ "\nColumns: " + columns;
+	}
 	
 }

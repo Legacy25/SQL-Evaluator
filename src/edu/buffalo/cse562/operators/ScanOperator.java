@@ -6,13 +6,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
+import edu.buffalo.cse562.schema.Schema;
+
 public class ScanOperator implements Operator {
 
+	Schema schema;
 	BufferedReader br;
 	File f;
 	
-	public ScanOperator(String file) {
-		f = new File(file);
+	
+	public ScanOperator(Schema schema) {
+		this.schema = schema;
+		f = new File(schema.getTableFile());
 		br = null;
 		reset();
 	}
@@ -50,6 +55,11 @@ public class ScanOperator implements Operator {
 		} catch (FileNotFoundException e) {
 			System.err.println("File "+ f + " not found");
 		}
+	}
+
+	@Override
+	public Schema getSchema() {
+		return schema;
 	}
 
 }
