@@ -1,6 +1,7 @@
 package edu.buffalo.cse562.operators;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 
 import edu.buffalo.cse562.Eval;
 import edu.buffalo.cse562.schema.Schema;
@@ -20,10 +21,23 @@ public class SelectionOperator extends Eval implements Operator {
 	private Expression where;
 	private Operator child;
 	private LeafValue next[];
+	private HashMap<Column, ColumnInfo> TypeCache;
+	
+	private class ColumnInfo {
+		String type;
+		int pos;
+		
+		public ColumnInfo(String type, int pos) {
+			this.type = type;
+			this.pos = pos;
+		}
+	}
 	
 	public SelectionOperator(Expression where, Operator child) {
 		this.where = where;
 		this.child = child;
+		
+		TypeCache = new HashMap<Column, SelectionOperator.ColumnInfo>();
 		schema = child.getSchema();
 		schema.setTableName("SELECT [" + schema.getTableName() + "]");
 	}
@@ -59,21 +73,29 @@ public class SelectionOperator extends Eval implements Operator {
 	@Override
 	public LeafValue eval(Column arg0) throws SQLException {
 		LeafValue lv = null;
-		int i;
 		String type = null;
+		int pos = 0;
 		
-		for(i=0; i<schema.getColumns().size(); i++) {
-			if(arg0.getColumnName().equals(schema.getColumns().get(i).getColumnName().toString())
-					|| arg0.getWholeColumnName().equals(schema.getColumns().get(i).getColumnName().toString())) {
-				type = schema.getColumns().get(i).getColumnType();
-				break;
+		if(TypeCache.containsKey(arg0)) {
+			type = TypeCache.get(arg0).type;
+			pos = TypeCache.get(arg0).pos;
+		}
+		else {
+			for(int i=0; i<schema.getColumns().size(); i++) {
+				if(arg0.getColumnName().equals(schema.getColumns().get(i).getColumnName().toString())
+						|| arg0.getWholeColumnName().equals(schema.getColumns().get(i).getColumnName().toString())) {
+					type = schema.getColumns().get(i).getColumnType();
+					pos = i;
+					TypeCache.put(arg0, new ColumnInfo(type, pos));
+					break;
+				}
 			}
 		}
 		
 		switch(type) {
 		case "int":
 			try {
-				lv = new LongValue(next[i].toLong());
+				lv = new LongValue(next[pos].toLong());
 			} catch (InvalidLeaf e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -81,7 +103,7 @@ public class SelectionOperator extends Eval implements Operator {
 			break;
 		case "decimal":
 			try {
-				lv = new DoubleValue(next[i].toDouble());
+				lv = new DoubleValue(next[pos].toDouble());
 			} catch (InvalidLeaf e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -90,10 +112,10 @@ public class SelectionOperator extends Eval implements Operator {
 		case "char":
 		case "varchar":
 		case "string":
-			lv = new StringValue(next[i].toString());
+			lv = new StringValue(next[pos].toString());
 			break;
 		case "date":
-			lv = new DateValue(next[i].toString());
+			lv = new DateValue(next[pos].toString());
 			break;
 		default:
 			throw new SQLException();

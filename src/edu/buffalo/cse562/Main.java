@@ -38,6 +38,7 @@ public class Main {
 			}
 		}
 		
+		Long start = System.nanoTime();
 		
 		parseTree = ParseTreeGenerator.generate(dataDirs, sqlFiles);
 		if(parseTree == null) {
@@ -47,5 +48,8 @@ public class Main {
 		else {
 			ParseTreeEvaluator.evaluate(parseTree);
 		}
+		
+		Long end = System.nanoTime();
+		System.out.println((double)(end - start) / 1000000000);
 	}
 }
