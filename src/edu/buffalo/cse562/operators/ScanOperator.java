@@ -20,7 +20,7 @@ public class ScanOperator implements Operator {
 	private BufferedReader br;
 	private File f;
 	
-	public ScanOperator(Schema schema) {
+	public ScanOperator(Schema schema) {		
 		this.schema = schema;
 		f = new File(schema.getTableFile());
 		br = null;
@@ -53,10 +53,14 @@ public class ScanOperator implements Operator {
 				case "char":
 				case "varchar":
 				case "string":
-					ret[i] = new StringValue(cols[i]);
+					String value = cols[i];
+					value = " " + value + " ";
+					ret[i] = new StringValue(value);
 					break;
 				case "date":
-					ret[i] = new DateValue(cols[i]);
+					value = cols[i];
+					value = " " + value + " ";
+					ret[i] = new DateValue(value);
 					break;
 				default:
 					throw new SQLException();

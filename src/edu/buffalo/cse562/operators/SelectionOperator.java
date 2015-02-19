@@ -63,8 +63,8 @@ public class SelectionOperator extends Eval implements Operator {
 		String type = null;
 		
 		for(i=0; i<schema.getColumns().size(); i++) {
-			if(arg0.getColumnName().equals(schema.getColumns().get(i).toString())
-					|| arg0.getWholeColumnName().equals(schema.getColumns().get(i).toString())) {
+			if(arg0.getColumnName().equals(schema.getColumns().get(i).getColumnName().toString())
+					|| arg0.getWholeColumnName().equals(schema.getColumns().get(i).getColumnName().toString())) {
 				type = schema.getColumns().get(i).getColumnType();
 				break;
 			}
