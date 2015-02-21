@@ -22,7 +22,12 @@ public class ScanOperator implements Operator {
 	
 	public ScanOperator(Schema schema) {		
 		this.schema = schema;
-		f = new File(schema.getTableFile());
+		try {
+			f = new File(schema.getTableFile());
+		} catch (NullPointerException e) {
+			System.err.println("Could not find schema. This is most probably due to"
+					+ " unimplemented query features");
+		}
 		br = null;
 		reset();
 	}

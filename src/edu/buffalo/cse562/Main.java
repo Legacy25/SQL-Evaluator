@@ -11,6 +11,7 @@ package edu.buffalo.cse562;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import edu.buffalo.cse562.datastructures.ParseTree;
 import edu.buffalo.cse562.operators.Operator;
@@ -21,7 +22,6 @@ public class Main {
 
 		ArrayList<String> dataDirs = new ArrayList<String>();
 		ArrayList<File> sqlFiles = new ArrayList<File>();
-		ParseTree<Operator> parseTree = null;
 		
 		
 		/*
@@ -38,18 +38,21 @@ public class Main {
 			}
 		}
 		
-		Long start = System.nanoTime();
+		ArrayList<ParseTree<Operator>> parseTreeList = new ArrayList<ParseTree<Operator>>();
 		
-		parseTree = ParseTreeGenerator.generate(dataDirs, sqlFiles);
-		if(parseTree == null) {
-			System.err.println("ParseTree generator failed!");
-			System.exit(1);
-		}
-		else {
-			ParseTreeEvaluator.evaluate(parseTree);
+//		Long start = System.nanoTime();
+		
+		for(File f : sqlFiles) {
+			parseTreeList.add(ParseTreeGenerator.generate(dataDirs, f));
 		}
 		
-		Long end = System.nanoTime();
-		System.out.println((double)(end - start) / 1000000000);
+		
+		Iterator<ParseTree<Operator>> i = parseTreeList.iterator();
+		while(i.hasNext()) {
+			ParseTreeEvaluator.evaluate(i.next());
+		}
+		
+//		Long end = System.nanoTime();
+//		System.out.println((double)(end - start) / 1000000000);
 	}
 }

@@ -52,103 +52,101 @@ public class ParseTreeGenerator {
 	
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static ParseTree<Operator> generate(ArrayList<String> dataDirs, ArrayList<File> sqlFiles ) {
+	public static ParseTree<Operator> generate(ArrayList<String> dataDirs, File sqlFile) {
 		
 		ParseTree<Operator> parseTree = new ParseTree<Operator>();
 
 		Statement statement = null;
-		for(File f : sqlFiles){			
-			try {
-				CCJSqlParser parser = new CCJSqlParser(new FileReader(f));
+		try {
+			CCJSqlParser parser = new CCJSqlParser(new FileReader(sqlFile));
 
-				while((statement = parser.Statement()) != null) {
+			while((statement = parser.Statement()) != null) {
 
-					/*
-					 * CREATE TABLE
-					 */
+				/*
+				 * CREATE TABLE
+				 */
+				
+				if(statement instanceof CreateTable) {
+					CreateTable cTable = (CreateTable) statement;
+					String tableName = cTable.getTable().toString();
+					String tableFile = findFile(dataDirs, tableName);
 					
-					if(statement instanceof CreateTable) {
-						CreateTable cTable = (CreateTable) statement;
-						String tableName = cTable.getTable().toString();
-						String tableFile = findFile(dataDirs, tableName);
-						
-						if(tableFile == null) {
-							System.err.println("Table "+ tableName + " not found in any "
-									+ "of the specified directories!");
-							System.exit(1);
-						}
-						Schema schema = new Schema(tableName, tableFile);
-						Iterator i = cTable.getColumnDefinitions().listIterator();
-						while(i.hasNext()) {
-							String colNameAndType[] = i.next().toString().split(" ");
-							ColumnWTyp c = new ColumnWTyp(cTable.getTable(), colNameAndType[0], colNameAndType[1]);
-							schema.addColumn(c);
-						}
-						tables.put(tableName, schema);
+					if(tableFile == null) {
+						System.err.println("Table "+ tableName + " not found in any "
+								+ "of the specified directories!");
+						System.exit(1);
 					}
-					
-			
-					/*
-					 * SELECT
-					 */
-					
-					
-					else if(statement instanceof Select) {
-						SelectBody body = ((Select) statement).getSelectBody();
-						if(body instanceof PlainSelect) {
-							PlainSelect ps = (PlainSelect) body;
-							Schema schema = tables.get(ps.getFromItem().toString());
-							parseTree.insertRoot(new ScanOperator(schema));
-							
-							if(ps.getJoins() != null){
-								Iterator i = ps.getJoins().iterator();
-								while(i.hasNext()) {
-									Join join = (Join) i.next();
-									
-									ParseTree<Operator> right = new ParseTree<Operator>(
-											new ScanOperator(tables.get(join.getRightItem().toString())));
-									parseTree.insertRoot(new JoinOperator(parseTree.getLeft().getRoot(),
-											right.getRoot()));
-									parseTree.insertBranch(right, ParseTree.Side.RIGHT);
-									
-									if(join.getOnExpression() != null) {
-										parseTree.insertRoot(new SelectionOperator(join.getOnExpression(), parseTree.getLeft().getRoot()));										
-									}
+					Schema schema = new Schema(tableName, tableFile);
+					Iterator i = cTable.getColumnDefinitions().listIterator();
+					while(i.hasNext()) {
+						String colNameAndType[] = i.next().toString().split(" ");
+						ColumnWTyp c = new ColumnWTyp(cTable.getTable(), colNameAndType[0], colNameAndType[1]);
+						schema.addColumn(c);
+					}
+					tables.put(tableName, schema);
+				}
+				
+		
+				/*
+				 * SELECT
+				 */
+				
+				
+				else if(statement instanceof Select) {
+					SelectBody body = ((Select) statement).getSelectBody();
+					if(body instanceof PlainSelect) {
+						PlainSelect ps = (PlainSelect) body;
+						Schema schema = tables.get(ps.getFromItem().toString());
+						parseTree.insertRoot(new ScanOperator(schema));
+						
+						if(ps.getJoins() != null){
+							Iterator i = ps.getJoins().iterator();
+							while(i.hasNext()) {
+								Join join = (Join) i.next();
+								
+								ParseTree<Operator> right = new ParseTree<Operator>(
+										new ScanOperator(tables.get(join.getRightItem().toString())));
+								parseTree.insertRoot(new JoinOperator(parseTree.getLeft().getRoot(),
+										right.getRoot()));
+								parseTree.insertBranch(right, ParseTree.Side.RIGHT);
+								
+								if(join.getOnExpression() != null) {
+									parseTree.insertRoot(new SelectionOperator(join.getOnExpression(), parseTree.getLeft().getRoot()));										
 								}
 							}
-							
-							if(ps.getWhere() != null) {
-								parseTree.insertRoot(new SelectionOperator(ps.getWhere(), parseTree.getLeft().getRoot()));
-							
-							}
-							
-							if(ps.getSelectItems() != null) {
-								parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
-							}
-								
 						}
-						else if(body instanceof Union) {
-							//TODO Union
+						
+						if(ps.getWhere() != null) {
+							parseTree.insertRoot(new SelectionOperator(ps.getWhere(), parseTree.getLeft().getRoot()));
+						
 						}
+						
+						if(ps.getSelectItems() != null) {
+							parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
+						}
+							
 					}
-					
-					/*
-					 * Unsupported Statement
-					 */
-					
-					else {
-						throw new UnsupportedStatementException();
+					else if(body instanceof Union) {
+						//TODO Union
 					}
 				}
-			} catch (FileNotFoundException e) {
-				System.err.println("File "+f+" not found!");
-			} catch (ParseException e) {
-				System.err.println("Parse Exception");
-			} catch (UnsupportedStatementException e) {
-				System.err.println("Unsupported SQL Statement");
-			} catch (InsertOnNonEmptyBranchException e) {
-				System.err.println("Tried to insert on a non-empty branch");
+				
+				/*
+				 * Unsupported Statement
+				 */
+				
+				else {
+					throw new UnsupportedStatementException();
+				}
 			}
+		} catch (FileNotFoundException e) {
+			System.err.println("File "+sqlFile+" not found!");
+		} catch (ParseException e) {
+			System.err.println("Parse Exception");
+		} catch (UnsupportedStatementException e) {
+			System.err.println("Unsupported SQL Statement");
+		} catch (InsertOnNonEmptyBranchException e) {
+			System.err.println("Tried to insert on a non-empty branch");
 		}
 		
 		return parseTree;

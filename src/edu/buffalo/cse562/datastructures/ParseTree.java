@@ -6,6 +6,7 @@ public class ParseTree<T> {
 	
 	private T node;
 	private ParseTree<T> left, right;
+	private int levels;
 
 	public enum Side {
 		LEFT, RIGHT;
@@ -15,12 +16,16 @@ public class ParseTree<T> {
 		node = null;
 		left = null;
 		right = null;
+		
+		levels = 0;
 	}
 	
 	public ParseTree(T root) {
 		node = root;
 		left = null;
 		right = null;
+		
+		levels = 1;
 	}
 	
 	public T getRoot() {
@@ -51,6 +56,8 @@ public class ParseTree<T> {
 		this.left = this;
 		this.right = null;
 		this.node = root;
+		
+		levels++;
 	}
 	
 	public void insertBranch(ParseTree<T> branch, Side s) throws InsertOnNonEmptyBranchException {
@@ -76,5 +83,26 @@ public class ParseTree<T> {
 		default:
 			break;
 		}
+	}
+	
+	public void printTree(ParseTree<T> parseTree) {
+		
+		@SuppressWarnings("unused")
+		int whiteSpaceCount = 0;
+		
+		for(int i=levels; i>0; i--) {
+
+		}
+		
+	}
+	
+	@SuppressWarnings("unused")
+	private void printWhiteSpace(int count) {
+		
+		String str = "";
+		for(int i=0; i<count; i++)
+			str += " ";
+		
+		System.out.print(str);
 	}
 }
