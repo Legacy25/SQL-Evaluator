@@ -73,7 +73,7 @@ public class ScanOperator implements Operator {
 				case "varchar":
 				case "string":
 					// Blank spaces are appended to account for JSQLParser's weirdness
-					ret[i] = new StringValue(cols[i]);
+					ret[i] = new StringValue(" "+cols[i]+" ");
 					break;
 
 				case "date":
@@ -91,7 +91,7 @@ public class ScanOperator implements Operator {
 		} catch (IOException e) {
 			System.err.println("IOException on Scan Operator");
 		} catch (SQLException e) {
-			// System.err.println("SQLException on Scan Operator");
+
 		}
 		return null;
 	}
