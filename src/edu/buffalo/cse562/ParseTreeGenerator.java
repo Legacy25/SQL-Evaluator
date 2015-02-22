@@ -52,7 +52,6 @@ public class ParseTreeGenerator {
 			File dir = new File(dDirs);
 			File files[] = dir.listFiles();
 			for(File f : files) {
-				System.out.println(f.getName());
 				if(f.getName().equalsIgnoreCase(tableName+".dat"))
 					return f.getAbsolutePath();
 			}
@@ -119,7 +118,7 @@ public class ParseTreeGenerator {
 					
 					// Store schema for later use
 					tables.put(tableName, schema);
-					System.out.println(tableName);
+					System.out.println("Storing Table: "+tableName+" with file "+schema.getTableFile());
 				}
 				
 		
