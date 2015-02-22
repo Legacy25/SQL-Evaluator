@@ -14,11 +14,18 @@ import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
 import edu.buffalo.cse562.schema.Schema;
 
+
+/*
+ * The ScanOperator is used to scan a file and return one row at a time
+ * The file to be read is known from the Schema
+ */
 public class ScanOperator implements Operator {
 
 	private Schema schema;
 	private BufferedReader br;
 	private File f;
+	
+	
 	
 	public ScanOperator(Schema schema) {		
 		this.schema = schema;
@@ -30,7 +37,10 @@ public class ScanOperator implements Operator {
 		}
 		br = null;
 		reset();
+		
 	}
+	
+	
 	
 	@Override
 	public LeafValue[] readOneTuple() {
@@ -47,26 +57,30 @@ public class ScanOperator implements Operator {
 			LeafValue ret[] = new LeafValue[cols.length];
 			
 			for(int i=0; i<cols.length; i++) {
+				
 				String type = schema.getColumns().get(i).getColumnType();
+				
 				switch(type) {
 				case "int":
 					ret[i] = new LongValue(cols[i]);
 					break;
+				
 				case "decimal":
 					ret[i] = new DoubleValue(cols[i]);
 					break;
+				
 				case "char":
 				case "varchar":
 				case "string":
-					String value = cols[i];
-					value = " " + value + " ";
-					ret[i] = new StringValue(value);
+					// Blank spaces are appended to account for JSQLParser's weirdness
+					ret[i] = new StringValue(" "+cols[i]+" ");
 					break;
+
 				case "date":
-					value = cols[i];
-					value = " " + value + " ";
-					ret[i] = new DateValue(value);
+					// Blank spaces are appended to account for JSQLParser's weirdness
+					ret[i] = new DateValue(" "+cols[i]+" ");
 					break;
+				
 				default:
 					throw new SQLException();
 				}
@@ -90,6 +104,8 @@ public class ScanOperator implements Operator {
 			System.err.println("File "+ f + " not found");
 		}
 	}
+	
+	
 
 	@Override
 	public Schema getSchema() {

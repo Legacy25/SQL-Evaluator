@@ -1,0 +1,71 @@
+diff --git a/src/edu/buffalo/cse562/operators/SelectionOperator.java b/src/edu/buffalo/cse562/operators/SelectionOperator.java
+index c187a3e..8e2cba3 100644
+--- a/src/edu/buffalo/cse562/operators/SelectionOperator.java
++++ b/src/edu/buffalo/cse562/operators/SelectionOperator.java
+@@ -4,6 +4,8 @@ import java.sql.SQLException;
+ import java.util.HashMap;
+ 
+ import edu.buffalo.cse562.Eval;
++import edu.buffalo.cse562.helpers.TypeInfoGenerator;
++import edu.buffalo.cse562.schema.ColumnWithType;
+ import edu.buffalo.cse562.schema.Schema;
+ import net.sf.jsqlparser.expression.BooleanValue;
+ import net.sf.jsqlparser.expression.DateValue;
+@@ -21,24 +23,14 @@ public class SelectionOperator extends Eval implements Operator {
+ 	private Expression where;
+ 	private Operator child;
+ 	private LeafValue next[];
+-	private HashMap<Column, ColumnInfo> TypeCache;
+-	
+-	private class ColumnInfo {
+-		String type;
+-		int pos;
+-		
+-		public ColumnInfo(String type, int pos) {
+-			this.type = type;
+-			this.pos = pos;
+-		}
+-	}
++	private HashMap<String, ColumnWithType> typeInfo;
+ 	
+ 	public SelectionOperator(Expression where, Operator child) {
+ 		this.where = where;
+ 		this.child = child;
+ 		
+-		TypeCache = new HashMap<Column, SelectionOperator.ColumnInfo>();
+ 		schema = child.getSchema();
++		typeInfo = TypeInfoGenerator.generateTypeInfo(schema);
+ 		schema.setTableName("SELECT [" + schema.getTableName() + "]");
+ 	}
+ 
+@@ -72,25 +64,15 @@ public class SelectionOperator extends Eval implements Operator {
+ 
+ 	@Override
+ 	public LeafValue eval(Column arg0) throws SQLException {
++		
+ 		LeafValue lv = null;
+ 		String type = null;
+ 		int pos = 0;
+ 		
+-		if(TypeCache.containsKey(arg0)) {
+-			type = TypeCache.get(arg0).type;
+-			pos = TypeCache.get(arg0).pos;
+-		}
+-		else {
+-			for(int i=0; i<schema.getColumns().size(); i++) {
+-				if(arg0.getColumnName().equals(schema.getColumns().get(i).getColumnName().toString())
+-						|| arg0.getWholeColumnName().equals(schema.getColumns().get(i).getColumnName().toString())) {
+-					type = schema.getColumns().get(i).getColumnType();
+-					pos = i;
+-					TypeCache.put(arg0, new ColumnInfo(type, pos));
+-					break;
+-				}
+-			}
+-		}
++		ColumnWithType col = typeInfo.get(arg0.getColumnName());
++		
++		type = col.getColumnType();
++		pos = col.getColumnNumber();
+ 		
+ 		switch(type) {
+ 		case "int":

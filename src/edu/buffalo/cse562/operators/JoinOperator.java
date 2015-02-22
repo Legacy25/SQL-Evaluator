@@ -1,7 +1,7 @@
 package edu.buffalo.cse562.operators;
 
 import net.sf.jsqlparser.expression.LeafValue;
-import edu.buffalo.cse562.schema.ColumnWTyp;
+import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
 public class JoinOperator implements Operator {
@@ -16,20 +16,25 @@ public class JoinOperator implements Operator {
 		
 		this.child1 = child1;
 		this.child2 = child2;
-		schema = new Schema(child1.getSchema().getTableName()+" JOIN "+child2.getSchema().getTableName(), "__mem__");
-		generateColumns();
+		generateSchema();
+		
 		next1 = null;
 		next2 = null;
 		flag = true;
 	}
 	
-	private void generateColumns() {
-		for(ColumnWTyp c:child1.getSchema().getColumns()) {
+	private void generateSchema() {
+
+		schema = new Schema(child1.getSchema().getTableName()+" JOIN "+child2.getSchema().getTableName(), "__mem__");
+
+		for(ColumnWithType c:child1.getSchema().getColumns()) {
 			schema.addColumn(c);
 		}
-		for(ColumnWTyp c:child2.getSchema().getColumns()) {
+		
+		for(ColumnWithType c:child2.getSchema().getColumns()) {
 			schema.addColumn(c);
 		}
+		
 	}
 	
 	@Override

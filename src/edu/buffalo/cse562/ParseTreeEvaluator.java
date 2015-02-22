@@ -35,8 +35,8 @@ public class ParseTreeEvaluator {
 				String str = res[i].toString();
 				System.out.print(str.substring(1, str.length() - 1));				
 			}
-			else {
-				System.out.print(res[i]);				
+			else {				
+				System.out.print(res[i]);
 			}
 			
 		}
