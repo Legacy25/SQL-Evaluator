@@ -32,7 +32,7 @@ public class ScanOperator implements Operator {
 		try {
 			f = new File(schema.getTableFile());
 		} catch (NullPointerException e) {
-			System.err.println("Could not find schema FILENAME:"+schema.getTableFile());
+			System.err.println("Could not find schema");
 			e.printStackTrace();
 		}
 		br = null;
