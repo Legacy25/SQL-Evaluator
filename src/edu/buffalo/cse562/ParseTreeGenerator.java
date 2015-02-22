@@ -151,9 +151,7 @@ public class ParseTreeGenerator {
 						 */
 						if(fi instanceof Table) {
 							Table table = (Table) fi;
-							System.out.println("Table name: "+table.getName().toString());
-							Schema schema = tables.get(table.getName().toString());
-							System.out.println(schema);
+							Schema schema = tables.get(table.getName().toString().toUpperCase());
 							
 							// Handle alias if present
 							if(fi.getAlias() != null) {
