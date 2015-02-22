@@ -118,7 +118,6 @@ public class ParseTreeGenerator {
 					
 					// Store schema for later use
 					tables.put(tableName, schema);
-					System.out.println("Storing Table: "+tableName+" with file "+schema.getTableFile());
 				}
 				
 		
@@ -152,7 +151,9 @@ public class ParseTreeGenerator {
 						 */
 						if(fi instanceof Table) {
 							Table table = (Table) fi;
+							System.out.println("Table name: "+table.getName().toString());
 							Schema schema = tables.get(table.getName().toString());
+							System.out.println(schema);
 							
 							// Handle alias if present
 							if(fi.getAlias() != null) {
