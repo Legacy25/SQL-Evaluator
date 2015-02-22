@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
@@ -19,6 +21,8 @@ import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
@@ -198,14 +202,53 @@ public class ParseTreeGenerator {
 						}						
 						
 						
-						//======================GROUP BY=======================================
+						//======================AGGREGATE QUERIES=============================
 						
-						if(ps.getGroupByColumnReferences() != null) {
-							Iterator i = ps.getGroupByColumnReferences().iterator();
-							ArrayList<Column> selectedColumns = new ArrayList<Column>();
+						
+						/*
+						 * Check if the query is an aggregate query
+						 * by seeing if either group by columns list
+						 * is null or seeing if there are any
+						 * functions in the expression list
+						 * 
+						 * 
+						 */
+						Boolean aggregateQuery = false;
+						if(ps.getGroupByColumnReferences() != null)
+							aggregateQuery = true;
+						
+						if(!aggregateQuery) {
+							Iterator i = ps.getSelectItems().iterator();
 							while(i.hasNext()) {
-								selectedColumns.add((Column) i.next());
+								SelectItem si = (SelectItem) i.next();
+								SelectExpressionItem sei = (SelectExpressionItem) si;
+								Expression expr = sei.getExpression();
+								if(expr instanceof Function) {
+									aggregateQuery = true;
+									break;
+								}
+							}							
+						}
+						
+						
+						
+						
+						
+						/*
+						 * If its an aggregate query, use the 
+						 * group by aggregate operator
+						 */
+						if(aggregateQuery) {
+							
+							ArrayList<Column> selectedColumns = new ArrayList<Column>();
+							
+							if(ps.getGroupByColumnReferences() != null) {
+								Iterator i = ps.getGroupByColumnReferences().iterator();
+								while(i.hasNext()) {
+									selectedColumns.add((Column) i.next());
+								}
 							}
+							
 							parseTree.insertRoot(new GroupByAggregateOperator(selectedColumns, ps.getSelectItems(), parseTree.getLeft().getRoot()));
 							
 						}
@@ -221,12 +264,12 @@ public class ParseTreeGenerator {
 						
 						
 						
-						
-						
-						
 						//=====================PROJECTION======================================
 						
-						if(ps.getGroupByColumnReferences() == null && ps.getSelectItems() != null) {
+						/*
+						 * Only use projection for non-aggregate queries
+						 */
+						if(!aggregateQuery && ps.getSelectItems() != null) {
 							if(!(ps.getSelectItems().get(0) instanceof AllColumns)) {
 								parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
 							}
