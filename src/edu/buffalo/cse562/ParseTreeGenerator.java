@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 
 import net.sf.jsqlparser.expression.Expression;
@@ -41,7 +40,7 @@ import edu.buffalo.cse562.schema.Schema;
 public class ParseTreeGenerator {
 
 	// The tables HashMap keeps a mapping of tables to their corresponding schemas
-	private static HashMap<String, Schema> tables = new HashMap<String, Schema>();
+	private static ArrayList<Schema> tables = new ArrayList<Schema>();
 
 
 	
@@ -59,6 +58,15 @@ public class ParseTreeGenerator {
 		return null;
 	}
 	
+	
+	private static Schema findSchema(String fileName) {
+		for(int i=0; i<tables.size(); i++) {
+			if(tables.get(i).getTableName().equalsIgnoreCase(fileName))
+				return tables.get(i);
+		}
+		
+		return null;
+	}
 	
 	
 	
@@ -117,7 +125,7 @@ public class ParseTreeGenerator {
 					}
 					
 					// Store schema for later use
-					tables.put(tableName, schema);
+					tables.add(schema);
 				}
 				
 		
@@ -151,7 +159,7 @@ public class ParseTreeGenerator {
 						 */
 						if(fi instanceof Table) {
 							Table table = (Table) fi;
-							Schema schema = tables.get(table.getName().toString().toUpperCase());
+							Schema schema = findSchema(table.getName().toString());
 							
 							// Handle alias if present
 							if(fi.getAlias() != null) {
@@ -180,7 +188,7 @@ public class ParseTreeGenerator {
 								Join join = (Join) i.next();
 								
 								ParseTree<Operator> right = new ParseTree<Operator>(
-										new ScanOperator(tables.get(join.getRightItem().toString())));
+										new ScanOperator(findSchema(join.getRightItem().toString())));
 								parseTree.insertRoot(new JoinOperator(parseTree.getLeft().getRoot(),
 										right.getRoot()));
 								parseTree.insertBranch(right, ParseTree.Side.RIGHT);
@@ -308,7 +316,7 @@ public class ParseTreeGenerator {
 	
 
 	
-	public static HashMap<String, Schema> getTableSchemas() {
+	public static ArrayList<Schema> getTableSchemas() {
 		return tables;
 	}
 }
