@@ -51,8 +51,6 @@ public class ProjectionOperator extends Eval implements Operator {
 		TypeCache = new HashMap<Column, ProjectionOperator.ColumnInfo>();
 		schemaGenerated = false;
 		
-		System.out.println(childSchema);
-		
 	}
 	
 	

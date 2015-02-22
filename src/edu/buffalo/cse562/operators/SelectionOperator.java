@@ -85,9 +85,6 @@ public class SelectionOperator extends Eval implements Operator {
 			for(int i=0; i<schema.getColumns().size(); i++) {
 				if(arg0.getWholeColumnName().equalsIgnoreCase(schema.getColumns().get(i).getWholeColumnName().toString())
 						|| arg0.getWholeColumnName().equalsIgnoreCase(schema.getColumns().get(i).getColumnName().toString())) {
-					System.out.println(arg0);
-
-					
 					type = schema.getColumns().get(i).getColumnType();
 					pos = i;
 					TypeCache.put(arg0, new ColumnInfo(type, pos));
@@ -101,16 +98,14 @@ public class SelectionOperator extends Eval implements Operator {
 			try {
 				lv = new LongValue(next[pos].toLong());
 			} catch (InvalidLeaf e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.err.println("Invalid Leaf");
 			}
 			break;
 		case "decimal":
 			try {
 				lv = new DoubleValue(next[pos].toDouble());
 			} catch (InvalidLeaf e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.err.println("Invalid Leaf");
 			}
 			break;
 		case "char":
