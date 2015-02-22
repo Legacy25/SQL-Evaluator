@@ -40,6 +40,7 @@ public class JoinOperator implements Operator {
 	@Override
 	public LeafValue[] readOneTuple() {
 		
+		
 		if(flag) {
 			flag = false;
 			next1 = child1.readOneTuple();
@@ -53,6 +54,9 @@ public class JoinOperator implements Operator {
 			child2.reset();
 			return readOneTuple();
 		}
+		
+		if(next1 == null)
+			return null;
 		
 		int length = next1.length + next2.length;
 		

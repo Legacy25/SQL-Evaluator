@@ -9,6 +9,7 @@ import java.util.Iterator;
 
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
@@ -24,6 +25,7 @@ import net.sf.jsqlparser.statement.select.Union;
 import edu.buffalo.cse562.datastructures.ParseTree;
 import edu.buffalo.cse562.exceptions.InsertOnNonEmptyBranchException;
 import edu.buffalo.cse562.exceptions.UnsupportedStatementException;
+import edu.buffalo.cse562.operators.GroupByAggregateOperator;
 import edu.buffalo.cse562.operators.JoinOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.ProjectionOperator;
@@ -193,23 +195,38 @@ public class ParseTreeGenerator {
 						if(ps.getWhere() != null) {
 							parseTree.insertRoot(new SelectionOperator(ps.getWhere(), parseTree.getLeft().getRoot()));
 						
-						}
+						}						
 						
 						
-						
-						//======================GROUP BY/HAVING================================
+						//======================GROUP BY=======================================
 						
 						if(ps.getGroupByColumnReferences() != null) {
-							// TODO Group By
-							
-							if(ps.getHaving() != null) {
-								//TODO Having
+							Iterator i = ps.getGroupByColumnReferences().iterator();
+							ArrayList<Column> selectedColumns = new ArrayList<Column>();
+							while(i.hasNext()) {
+								selectedColumns.add((Column) i.next());
 							}
+							parseTree.insertRoot(new GroupByAggregateOperator(selectedColumns, ps.getSelectItems(), parseTree.getLeft().getRoot()));
+							
 						}
+						
+						
+						
+						//=======================HAVING========================================
+						
+						if(ps.getHaving() != null) {
+							parseTree.insertRoot(new SelectionOperator(ps.getHaving(), parseTree.getLeft().getRoot()));
+
+						}
+						
+						
+						
+						
+						
 						
 						//=====================PROJECTION======================================
 						
-						if(ps.getSelectItems() != null) {
+						if(ps.getGroupByColumnReferences() == null && ps.getSelectItems() != null) {
 							if(!(ps.getSelectItems().get(0) instanceof AllColumns)) {
 								parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
 							}
