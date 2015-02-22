@@ -249,7 +249,8 @@ public class ParseTreeGenerator {
 								}
 							}
 							
-							parseTree.insertRoot(new GroupByAggregateOperator(selectedColumns, ps.getSelectItems(), parseTree.getLeft().getRoot()));
+							if(parseTree.getLeft() != null)
+								parseTree.insertRoot(new GroupByAggregateOperator(selectedColumns, ps.getSelectItems(), parseTree.getLeft().getRoot()));
 							
 						}
 						
