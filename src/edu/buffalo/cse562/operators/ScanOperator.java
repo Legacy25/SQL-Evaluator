@@ -32,8 +32,8 @@ public class ScanOperator implements Operator {
 		try {
 			f = new File(schema.getTableFile());
 		} catch (NullPointerException e) {
-			System.err.println("Could not find schema. This is most probably due to"
-					+ " unimplemented query features");
+			System.err.println("Could not find schema.");
+			e.printStackTrace();
 		}
 		br = null;
 		reset();
