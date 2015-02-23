@@ -123,6 +123,10 @@ public class ParseTreeGenerator {
 					int k = 0;
 					while(i.hasNext()) {
 						String colNameAndType[] = i.next().toString().split(" ");
+						colNameAndType[0] = colNameAndType[0].toLowerCase();
+						colNameAndType[1] = colNameAndType[1].toLowerCase();
+						if(colNameAndType[1].equalsIgnoreCase("integer"))
+							colNameAndType[1] = "int";
 						ColumnWithType c = new ColumnWithType(cTable.getTable(), colNameAndType[0], colNameAndType[1], k);
 						k++;
 						schema.addColumn(c);
