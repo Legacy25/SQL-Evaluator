@@ -23,14 +23,12 @@ public class OrderByOperator extends Eval implements Operator {
 	private ArrayList<LeafValue[]> tempList;
 	private int index;
 	private int column;
-	private Expression expr;
 	private Operator child;
 	private HashMap<Column, ColumnInfo> TypeCache;
 
 
 	public OrderByOperator(Expression expr, Operator child) {
 		this.child = child;
-		this.expr = expr;
 		
 		TypeCache = new HashMap<Column, ColumnInfo>();
 		tempList = new ArrayList<LeafValue[]>();
@@ -94,8 +92,6 @@ public class OrderByOperator extends Eval implements Operator {
 	
 	private void sort() {
 		
-		int left,right;
-		
 		LeafValue[] next = child.readOneTuple();
 		
 		while (next != null) {
@@ -103,10 +99,8 @@ public class OrderByOperator extends Eval implements Operator {
 			next = child.readOneTuple();
 		}
 		
-		left = 0;
-		right = tempList.size() - 1;
+		tempList = quicksort(tempList);
 
-		quicksort(tempList,left,right);
 		
 		child.reset();
 	
@@ -117,45 +111,84 @@ public class OrderByOperator extends Eval implements Operator {
 	
 	
 
-	private void quicksort(ArrayList<LeafValue[]> tempList, int left, int right) {
+	private ArrayList<LeafValue[]> quicksort(ArrayList<LeafValue[]> tempList) {
 		
-		if (left < right) {
+		ArrayList<LeafValue[]> smaller = new ArrayList<LeafValue[]>();
+		ArrayList<LeafValue[]> greater = new ArrayList<LeafValue[]>();
 		
-			int p = partition(tempList, left, right);
-			System.out.println(p);
-			
-			quicksort(tempList, left, p-1);
-			quicksort(tempList, p+1, right);
+		if(tempList.size() <= 1)
+			return tempList;
 		
-		}
-
-	}	
-	
-
-	private int partition(ArrayList<LeafValue[]> tempList, int left, int right) {
-		int i = left, j = right;
+		String type = null;
 		LeafValue pivot = tempList.get(0)[column];
-		LeafValue[] temp;
 		
-		while (i <= j) {
+		if(pivot instanceof LongValue) {
+			type = "int";
+		}
+		else if(pivot instanceof DoubleValue) {
+			type = "double";
+		}
+		else if(pivot instanceof StringValue) {
+			type = "string";
+		}
+		else if(pivot instanceof DateValue) {
+			type = "date";
+		}
+		
+		for(int i=1; i<tempList.size(); i++) {
 			try {
-				while (tempList.get(i)[column].toLong() < pivot.toLong())
-					i++;
-				while (tempList.get(j)[column].toLong() > pivot.toLong())
-					j--;
+				switch(type) {
+				case "int":
+					if(tempList.get(i)[column].toLong() <= pivot.toLong()) {
+						smaller.add(tempList.get(i));
+					}
+					else {
+						greater.add(tempList.get(i));
+					}
+					break;
+					
+				case "decimal":
+					if(tempList.get(i)[column].toDouble() <= pivot.toDouble()) {
+						smaller.add(tempList.get(i));
+					}
+					else {
+						greater.add(tempList.get(i));
+					}
+					break;
+					
+				case "string":
+					if(tempList.get(i)[column].toString().compareTo(pivot.toString()) <= 0) {
+						smaller.add(tempList.get(i));
+					}
+					else {
+						greater.add(tempList.get(i));
+					}
+					break;
+					
+				case "date":
+					if(tempList.get(i)[column].toString().compareTo(pivot.toString()) <= 0) {
+						smaller.add(tempList.get(i));
+					}
+					else {
+						greater.add(tempList.get(i));
+					}
+					break;
+				
+				}
+					
 			} catch (InvalidLeaf e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			if (i <= j) {
-				temp = tempList.get(i);
-				tempList.set(i, tempList.get(j));
-				tempList.set(j, temp);
-				i++;
-				j--;
-			}
 		}
-		return i;
+		
+		ArrayList<LeafValue[]> sorted = new ArrayList<LeafValue[]>();
+		sorted.addAll(quicksort(smaller));
+		sorted.add(tempList.get(0));
+		sorted.addAll(quicksort(greater));
+		
+		return sorted;
+
 	}
 
 	
