@@ -34,6 +34,7 @@ public class OrderByOperator extends Eval implements Operator {
 		tempList = new ArrayList<LeafValue[]>();
 		
 		schema = child.getSchema();
+		schema.setTableName("ORDER BY [" + schema.getTableName() + "]");
 		
 		index = 0;
 		

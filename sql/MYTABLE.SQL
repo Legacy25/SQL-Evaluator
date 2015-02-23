@@ -1,5 +1,7 @@
-CREATE TABLE R ( A int, B int );
-CREATE TABLE S ( B int, C int );
+CREATE TABLE R (A int, B int);
 
-SELECT R.A, R.B, S.B, S.C FROM R JOIN S ON R.B = S.B;
-
+SELECT A, B FROM R
+  UNION
+SELECT A, B FROM R
+  UNION
+SELECT A, B FROM R;

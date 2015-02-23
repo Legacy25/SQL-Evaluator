@@ -15,6 +15,7 @@ public class LimitOperator implements Operator {
 		this.child = child;
 		
 		schema = child.getSchema();
+		schema.setTableName("LIMIT [" + schema.getTableName() + "]");
 		
 		count = 0;
 	}

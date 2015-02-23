@@ -38,6 +38,7 @@ import edu.buffalo.cse562.operators.OrderByOperator;
 import edu.buffalo.cse562.operators.ProjectionOperator;
 import edu.buffalo.cse562.operators.ScanOperator;
 import edu.buffalo.cse562.operators.SelectionOperator;
+import edu.buffalo.cse562.operators.UnionOperator;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
@@ -74,7 +75,6 @@ public class ParseTreeGenerator {
 	
 	
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static ParseTree<Operator> generate(ArrayList<String> dataDirs, File sqlFile) {
 		
 		ParseTree<Operator> parseTree = new ParseTree<Operator>();
@@ -95,7 +95,6 @@ public class ParseTreeGenerator {
 			 */
 			while((statement = parser.Statement()) != null) {
 
-				
 				/*
 				 * CREATE TABLE Statement
 				 * 
@@ -118,6 +117,7 @@ public class ParseTreeGenerator {
 					
 					// Generate the schema for this table
 					Schema schema = new Schema(tableName, tableFile);
+					@SuppressWarnings("rawtypes")
 					Iterator i = cTable.getColumnDefinitions().listIterator();
 					
 					int k = 0;
@@ -132,7 +132,7 @@ public class ParseTreeGenerator {
 					tables.add(schema);
 				}
 				
-		
+
 				
 				
 				/*
@@ -149,203 +149,48 @@ public class ParseTreeGenerator {
 					if(body instanceof PlainSelect) {
 						
 						PlainSelect ps = (PlainSelect) body;
+						parseTree = parsePlainSelect(ps);
 						
-						//==================FROM CLAUSE=================================
-						
-						FromItem fi = ps.getFromItem();
-						
-						
-						/*
-						 * FromItem is an interface, it has 3 classes -
-						 * Table, SubJoin and SubSelect
-						 * 
-						 * We handle each differently
-						 */
-						if(fi instanceof Table) {
-							Table table = (Table) fi;
-							Schema schema = findSchema(table.getName().toString());
-							
-							// Handle alias if present
-							if(fi.getAlias() != null) {
-								schema.setTableName(fi.getAlias());
-							}
-							
-							parseTree.insertRoot(new ScanOperator(schema));
-						}
-						
-						if(fi instanceof SubJoin) {
-							// TODO
-						}
-						
-						if(fi instanceof SubSelect) {
-							// TODO
-						}
-						
-						
-						
-						
-						//====================JOINS====================================
 
-						if(ps.getJoins() != null){
-							Iterator i = ps.getJoins().iterator();
-							while(i.hasNext()) {
-								Join join = (Join) i.next();
-								
-								ParseTree<Operator> right = new ParseTree<Operator>(
-										new ScanOperator(findSchema(join.getRightItem().toString())));
-								parseTree.insertRoot(new JoinOperator(parseTree.getLeft().getRoot(),
-										right.getRoot()));
-								parseTree.insertBranch(right, ParseTree.Side.RIGHT);
-								
-								if(join.getOnExpression() != null) {
-									parseTree.insertRoot(new SelectionOperator(join.getOnExpression(), parseTree.getLeft().getRoot()));										
-								}
-							}
-						}
-						
-						
-						
-						
-						//======================SELECTION=====================================
-						
-						if(ps.getWhere() != null) {
-							parseTree.insertRoot(new SelectionOperator(ps.getWhere(), parseTree.getLeft().getRoot()));
-						
-						}						
-						
-						
-						//======================AGGREGATE QUERIES=============================
-						
-						
-						/*
-						 * Check if the query is an aggregate query
-						 * by seeing if either group by columns list
-						 * is null or seeing if there are any
-						 * functions in the expression list
-						 * 
-						 * 
-						 */
-						Boolean aggregateQuery = false;
-						if(ps.getGroupByColumnReferences() != null)
-							aggregateQuery = true;
-						
-						if(!aggregateQuery) {
-							Iterator i = ps.getSelectItems().iterator();
-							while(i.hasNext()) {
-								SelectItem si = (SelectItem) i.next();
-								
-								if(si instanceof SelectExpressionItem) {
-									SelectExpressionItem sei = (SelectExpressionItem) si;
-									Expression expr = sei.getExpression();
-									if(expr instanceof Function) {
-										aggregateQuery = true;
-										break;
-									}
-								}
-							}							
-						}
-						
-						
-						
-						
-						
-						/*
-						 * If its an aggregate query, use the 
-						 * group by aggregate operator
-						 */
-						if(aggregateQuery) {
-							
-							ArrayList<Column> selectedColumns = new ArrayList<Column>();
-							
-							if(ps.getGroupByColumnReferences() != null) {
-								Iterator i = ps.getGroupByColumnReferences().iterator();
-								while(i.hasNext()) {
-									selectedColumns.add((Column) i.next());
-								}
-							}
-							
-							if(parseTree.getLeft() != null)
-								parseTree.insertRoot(new GroupByAggregateOperator(selectedColumns, ps.getSelectItems(), parseTree.getLeft().getRoot()));
-							
-						}
-						
-						
-						
-						//=======================HAVING========================================
-						
-						if(ps.getHaving() != null) {
-							parseTree.insertRoot(new SelectionOperator(ps.getHaving(), parseTree.getLeft().getRoot()));
-
-						}
-						
-						
-						
-						//=====================PROJECTION======================================
-						
-						/*
-						 * Only use projection for non-aggregate queries
-						 */
-						if(!aggregateQuery && ps.getSelectItems() != null) {
-							if(!(ps.getSelectItems().get(0) instanceof AllColumns)) {
-								parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
-							}
-						}
-						
-						
-						
-						
-						//========================ORDER BY======================================
-						
-						if(ps.getOrderByElements() != null) {
-							Iterator i = ps.getOrderByElements().iterator();
-							
-							while(i.hasNext()) {
-								OrderByElement o = (OrderByElement) i.next();
-								parseTree.insertRoot(new OrderByOperator(o.getExpression(), parseTree.getLeft().getRoot()));
-							}
-						}
-						
-						
-						
-						
-						
-						//=========================DISTINCT=====================================
-						
-						if(ps.getDistinct() != null) {
-							parseTree.insertRoot(new DistinctOperator((ArrayList<SelectItem>) ps.getDistinct().getOnSelectItems(), parseTree.getLeft().getRoot()));
-						}
-						
-						
-						//=======================LIMIT==========================================
-						
-						if(ps.getLimit() != null) {
-							parseTree.insertRoot(new LimitOperator(ps.getLimit().getRowCount(), parseTree.getLeft().getRoot()));
-						}
-						
-						//======================================================================
-							
 					}
 					else if(body instanceof Union) {
-						//TODO Union
+						Union union = (Union) body;
+						
+						@SuppressWarnings("rawtypes")
+						Iterator i = union.getPlainSelects().iterator();
+						
+						parseTree.insertRoot(new UnionOperator(parsePlainSelect((PlainSelect) i.next()).getRoot(), 
+								parsePlainSelect((PlainSelect) i.next()).getRoot()));
+						while(i.hasNext()) {
+							parseTree.insertRoot(new UnionOperator(parseTree.getRoot(), parsePlainSelect((PlainSelect) i.next()).getRoot()));
+						}
 					}
+					
+					/*
+					 * Unsupported Statement
+					 */
+					
+					else {
+						throw new UnsupportedStatementException();
+					}
+					
+					return parseTree;
+					
 				}
+						
 				
-				/*
-				 * Unsupported Statement
-				 */
-				
-				else {
-					throw new UnsupportedStatementException();
-				}
 			}
+			
 		} catch (FileNotFoundException e) {
 			System.err.println("File "+sqlFile+" not found!");
 		} catch (ParseException e) {
 			System.err.println("Parse Exception");
-		} catch (UnsupportedStatementException e) {
-			System.err.println("Unsupported SQL Statement");
 		} catch (InsertOnNonEmptyBranchException e) {
-			System.err.println("Tried to insert on a non-empty branch");
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedStatementException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		return parseTree;
@@ -353,6 +198,198 @@ public class ParseTreeGenerator {
 	}
 	
 
+	@SuppressWarnings("unchecked")
+	private static ParseTree<Operator> parsePlainSelect(PlainSelect ps) throws InsertOnNonEmptyBranchException, UnsupportedStatementException {
+		
+		ParseTree<Operator> parseTree = new ParseTree<Operator>();
+	
+		//==================FROM CLAUSE=================================
+		
+		FromItem fi = ps.getFromItem();
+		
+		
+		/*
+		 * FromItem is an interface, it has 3 classes -
+		 * Table, SubJoin and SubSelect
+		 * 
+		 * We handle each differently
+		 */
+		if(fi instanceof Table) {
+			Table table = (Table) fi;
+			Schema schema = findSchema(table.getName().toString());
+			
+			// Handle alias if present
+			if(fi.getAlias() != null) {
+				schema.setTableName(fi.getAlias());
+			}
+			
+			parseTree.insertRoot(new ScanOperator(schema));
+		}
+		
+		if(fi instanceof SubJoin) {
+			// TODO
+		}
+		
+		if(fi instanceof SubSelect) {
+			// TODO
+		}
+		
+		
+		
+		
+		//====================JOINS====================================
+
+		if(ps.getJoins() != null){
+			@SuppressWarnings("rawtypes")
+			Iterator i = ps.getJoins().iterator();
+			while(i.hasNext()) {
+				Join join = (Join) i.next();
+				
+				ParseTree<Operator> right = new ParseTree<Operator>(
+						new ScanOperator(findSchema(join.getRightItem().toString())));
+				parseTree.insertRoot(new JoinOperator(parseTree.getLeft().getRoot(),
+						right.getRoot()));
+				parseTree.insertBranch(right, ParseTree.Side.RIGHT);
+				
+				if(join.getOnExpression() != null) {
+					parseTree.insertRoot(new SelectionOperator(join.getOnExpression(), parseTree.getLeft().getRoot()));										
+				}
+			}
+		}
+		
+		
+		
+		
+		//======================SELECTION=====================================
+		
+		if(ps.getWhere() != null) {
+			parseTree.insertRoot(new SelectionOperator(ps.getWhere(), parseTree.getLeft().getRoot()));
+		
+		}						
+		
+		
+		//======================AGGREGATE QUERIES=============================
+		
+		
+		/*
+		 * Check if the query is an aggregate query
+		 * by seeing if either group by columns list
+		 * is null or seeing if there are any
+		 * functions in the expression list
+		 * 
+		 * 
+		 */
+		Boolean aggregateQuery = false;
+		if(ps.getGroupByColumnReferences() != null)
+			aggregateQuery = true;
+		
+		if(!aggregateQuery) {
+			@SuppressWarnings("rawtypes")
+			Iterator i = ps.getSelectItems().iterator();
+			while(i.hasNext()) {
+				SelectItem si = (SelectItem) i.next();
+				
+				if(si instanceof SelectExpressionItem) {
+					SelectExpressionItem sei = (SelectExpressionItem) si;
+					Expression expr = sei.getExpression();
+					if(expr instanceof Function) {
+						aggregateQuery = true;
+						break;
+					}
+				}
+			}							
+		}
+		
+		
+		
+		
+		
+		/*
+		 * If its an aggregate query, use the 
+		 * group by aggregate operator
+		 */
+		if(aggregateQuery) {
+			
+			ArrayList<Column> selectedColumns = new ArrayList<Column>();
+			
+			if(ps.getGroupByColumnReferences() != null) {
+				@SuppressWarnings("rawtypes")
+				Iterator i = ps.getGroupByColumnReferences().iterator();
+				while(i.hasNext()) {
+					selectedColumns.add((Column) i.next());
+				}
+			}
+			
+			if(parseTree.getLeft() != null)
+				parseTree.insertRoot(new GroupByAggregateOperator(selectedColumns, ps.getSelectItems(), parseTree.getLeft().getRoot()));
+			
+		}
+		
+		
+		
+		//=======================HAVING========================================
+		
+		if(ps.getHaving() != null) {
+			parseTree.insertRoot(new SelectionOperator(ps.getHaving(), parseTree.getLeft().getRoot()));
+
+		}
+		
+		
+		
+		//=====================PROJECTION======================================
+		
+		/*
+		 * Only use projection for non-aggregate queries
+		 */
+		if(!aggregateQuery && ps.getSelectItems() != null) {
+			if(!(ps.getSelectItems().get(0) instanceof AllColumns)) {
+				parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
+			}
+		}
+		
+		
+		
+		
+		//========================ORDER BY======================================
+		
+		if(ps.getOrderByElements() != null) {
+			@SuppressWarnings("rawtypes")
+			Iterator i = ps.getOrderByElements().iterator();
+			
+			while(i.hasNext()) {
+				OrderByElement o = (OrderByElement) i.next();
+				parseTree.insertRoot(new OrderByOperator(o.getExpression(), parseTree.getLeft().getRoot()));
+			}
+		}
+		
+		
+		
+		
+		
+		//=========================DISTINCT=====================================
+		
+		if(ps.getDistinct() != null) {
+			parseTree.insertRoot(new DistinctOperator(parseTree.getLeft().getRoot()));
+		}
+		
+		
+		//=======================LIMIT==========================================
+		
+		if(ps.getLimit() != null) {
+			parseTree.insertRoot(new LimitOperator(ps.getLimit().getRowCount(), parseTree.getLeft().getRoot()));
+		}
+		
+		//======================================================================
+		
+		
+		return parseTree;
+		
+		
+	}
+	
+	
+	
+	
 	
 	public static ArrayList<Schema> getTableSchemas() {
 		return tables;
