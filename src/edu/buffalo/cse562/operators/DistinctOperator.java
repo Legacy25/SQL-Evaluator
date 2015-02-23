@@ -1,22 +1,22 @@
 package edu.buffalo.cse562.operators;
 
+import java.util.ArrayList;
+
 import net.sf.jsqlparser.expression.LeafValue;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import edu.buffalo.cse562.schema.Schema;
 
-public class LimitOperator implements Operator {
+public class DistinctOperator implements Operator {
 
 	private Schema schema;
 	private Operator child;
-	private long limit;
-	private long count;
+	private ArrayList<SelectItem> selectItems;
 	
-	public LimitOperator(long l, Operator child) {
-		this.limit = l;
+	public DistinctOperator(ArrayList<SelectItem> selectItems, Operator child) {
 		this.child = child;
-		
 		schema = child.getSchema();
 		
-		count = 0;
+		this.selectItems = selectItems;
 	}
 	
 	@Override
@@ -26,23 +26,13 @@ public class LimitOperator implements Operator {
 
 	@Override
 	public LeafValue[] readOneTuple() {
-		LeafValue[] next = child.readOneTuple();
-		if(next == null)
-			return null;
-		
-		if(count >= limit) {
-			return null;
-		}
-		else {
-			count++;
-			return next;
-		}
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
 	public void reset() {
-		child.reset();	
-		count = 0;
+		child.reset();
 	}
 
 }

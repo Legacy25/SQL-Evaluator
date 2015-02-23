@@ -17,6 +17,7 @@ import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
@@ -28,9 +29,12 @@ import net.sf.jsqlparser.statement.select.Union;
 import edu.buffalo.cse562.datastructures.ParseTree;
 import edu.buffalo.cse562.exceptions.InsertOnNonEmptyBranchException;
 import edu.buffalo.cse562.exceptions.UnsupportedStatementException;
+import edu.buffalo.cse562.operators.DistinctOperator;
 import edu.buffalo.cse562.operators.GroupByAggregateOperator;
 import edu.buffalo.cse562.operators.JoinOperator;
+import edu.buffalo.cse562.operators.LimitOperator;
 import edu.buffalo.cse562.operators.Operator;
+import edu.buffalo.cse562.operators.OrderByOperator;
 import edu.buffalo.cse562.operators.ProjectionOperator;
 import edu.buffalo.cse562.operators.ScanOperator;
 import edu.buffalo.cse562.operators.SelectionOperator;
@@ -229,11 +233,14 @@ public class ParseTreeGenerator {
 							Iterator i = ps.getSelectItems().iterator();
 							while(i.hasNext()) {
 								SelectItem si = (SelectItem) i.next();
-								SelectExpressionItem sei = (SelectExpressionItem) si;
-								Expression expr = sei.getExpression();
-								if(expr instanceof Function) {
-									aggregateQuery = true;
-									break;
+								
+								if(si instanceof SelectExpressionItem) {
+									SelectExpressionItem sei = (SelectExpressionItem) si;
+									Expression expr = sei.getExpression();
+									if(expr instanceof Function) {
+										aggregateQuery = true;
+										break;
+									}
 								}
 							}							
 						}
@@ -282,6 +289,37 @@ public class ParseTreeGenerator {
 							if(!(ps.getSelectItems().get(0) instanceof AllColumns)) {
 								parseTree.insertRoot(new ProjectionOperator(ps.getSelectItems(), parseTree.getLeft().getRoot()));
 							}
+						}
+						
+						
+						
+						
+						//========================ORDER BY======================================
+						
+						if(ps.getOrderByElements() != null) {
+							Iterator i = ps.getOrderByElements().iterator();
+							
+							while(i.hasNext()) {
+								OrderByElement o = (OrderByElement) i.next();
+								parseTree.insertRoot(new OrderByOperator(o.getExpression(), parseTree.getLeft().getRoot()));
+							}
+						}
+						
+						
+						
+						
+						
+						//=========================DISTINCT=====================================
+						
+						if(ps.getDistinct() != null) {
+							parseTree.insertRoot(new DistinctOperator((ArrayList<SelectItem>) ps.getDistinct().getOnSelectItems(), parseTree.getLeft().getRoot()));
+						}
+						
+						
+						//=======================LIMIT==========================================
+						
+						if(ps.getLimit() != null) {
+							parseTree.insertRoot(new LimitOperator(ps.getLimit().getRowCount(), parseTree.getLeft().getRoot()));
 						}
 						
 						//======================================================================
