@@ -101,7 +101,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		if(next == null)
 			return;		
 		
-		LeafValue[] ret = new LeafValue[selectItems.size()];
+		LeafValue[] ret = new LeafValue[childSchema.getColumns().size() + selectItems.size()];
 		
 		int k = 0;
 		Iterator<SelectItem> i = selectItems.iterator();
@@ -172,7 +172,14 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 			}
 			
 			else if(si instanceof AllTableColumns) {
-				// TODO
+				AllTableColumns atc = (AllTableColumns) si;
+				Table t = atc.getTable();
+				
+				for(int j=0; j<childSchema.getColumns().size(); j++) {
+					if(childSchema.getColumns().get(j).getTable().getName().equalsIgnoreCase(t.getName())) {
+						schema.addColumn(childSchema.getColumns().get(j));
+					}
+				}
 			}
 			else {
 				System.err.println("Unrecognized SelectItem)");
@@ -243,7 +250,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	
 	
 	public LeafValue[] generateReturn() {
-		LeafValue ret[] = new LeafValue[selectItems.size()];
+		LeafValue ret[] = new LeafValue[schema.getColumns().size()];
 		
 		int k = 0;
 		Iterator<SelectItem> i = selectItems.iterator();
@@ -406,7 +413,17 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 			}
 			
 			else if(si instanceof AllTableColumns) {
-				// TODO
+				AllTableColumns atc = (AllTableColumns) si;
+				Table t = atc.getTable();
+				
+				for(int j=0; j<childSchema.getColumns().size(); j++) {
+					if(childSchema.getColumns().get(j).getTable().getName().equalsIgnoreCase(t.getName())) {
+						ret[k] = next[j];
+						k++;
+					}
+				}
+				
+				k--;
 			}
 			else {
 				System.err.println("Unrecognized SelectItem)");

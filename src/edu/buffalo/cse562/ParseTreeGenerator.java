@@ -186,10 +186,8 @@ public class ParseTreeGenerator {
 		} catch (ParseException e) {
 			System.err.println("Parse Exception");
 		} catch (InsertOnNonEmptyBranchException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedStatementException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -231,7 +229,41 @@ public class ParseTreeGenerator {
 		}
 		
 		if(fi instanceof SubSelect) {
-			// TODO
+			
+			ParseTree<Operator> subSelectTree = new ParseTree<Operator>();
+			SelectBody body = ((SubSelect) fi).getSelectBody();
+			
+			if(body instanceof PlainSelect) {
+				
+				PlainSelect ps1 = (PlainSelect) body;
+				subSelectTree = parsePlainSelect(ps1);
+				
+
+			}
+			else if(body instanceof Union) {
+				Union union = (Union) body;
+				
+				@SuppressWarnings("rawtypes")
+				Iterator i = union.getPlainSelects().iterator();
+				
+				subSelectTree.insertRoot(new UnionOperator(parsePlainSelect((PlainSelect) i.next()).getRoot(), 
+						parsePlainSelect((PlainSelect) i.next()).getRoot()));
+				while(i.hasNext()) {
+					subSelectTree.insertRoot(new UnionOperator(subSelectTree.getRoot(), parsePlainSelect((PlainSelect) i.next()).getRoot()));
+				}
+			}
+			
+			/*
+			 * Unsupported Statement
+			 */
+			
+			else {
+				throw new UnsupportedStatementException();
+			}
+			
+			subSelectTree.getRoot().getSchema().setTableName(fi.getAlias());
+			parseTree.insertRoot(subSelectTree.getRoot());
+			
 		}
 		
 		
