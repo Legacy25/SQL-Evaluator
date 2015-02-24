@@ -75,7 +75,6 @@ public class ProjectionOperator extends Eval implements Operator {
 				try {
 					ret[k] = eval(expr);
 				} catch (SQLException e) {
-					System.err.println("SQLException");
 					e.printStackTrace();
 					System.exit(1);
 				}
@@ -146,7 +145,6 @@ public class ProjectionOperator extends Eval implements Operator {
 				try {
 					ret[k] = eval(expr);
 				} catch (SQLException e) {
-					System.err.println("SQLException");
 					e.printStackTrace();
 					System.exit(1);
 				}

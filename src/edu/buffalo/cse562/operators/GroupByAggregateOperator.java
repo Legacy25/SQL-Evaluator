@@ -138,13 +138,9 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 							}							
 						}
 					} catch (SQLException e) {
-						System.err.println("SQLException");
-						e.printStackTrace();
 						System.exit(1);
 					} catch (InvalidLeaf e) {
 						System.err.println("Invalid column type for given function");
-						e.printStackTrace();
-						System.exit(1);
 					}
 				}
 				else {
@@ -152,8 +148,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 					try {
 						ret[k] = eval(expr);
 					} catch (SQLException e) {
-						System.err.println("SQLException");
-						e.printStackTrace();
 						System.exit(1);
 					}
 					
@@ -290,12 +284,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 							}
 							
 						} catch (SQLException e) {
-							System.err.println("SQLException");
-							e.printStackTrace();
 							System.exit(1);
 						} catch (InvalidLeaf e) {
-							System.err.println("Invalid column type for given function");
-							e.printStackTrace();
 							System.exit(1);
 						}
 						ret[k] = new DoubleValue(sum[k]);							
@@ -316,12 +306,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 							}
 							
 						} catch (SQLException e) {
-							System.err.println("SQLException");
-							e.printStackTrace();
 							System.exit(1);
 						} catch (InvalidLeaf e) {
-							System.err.println("Invalid column type for given function");
-							e.printStackTrace();
 							System.exit(1);
 						}
 						ret[k] = new DoubleValue(avg[k]);		
@@ -339,8 +325,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 							}
 							
 						} catch (SQLException e) {
-							System.err.println("SQLException");
-							e.printStackTrace();
 							System.exit(1);
 						}
 						ret[k] = new DoubleValue(count[k]);		
@@ -360,12 +344,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 							}
 							
 						} catch (SQLException e) {
-							System.err.println("SQLException");
-							e.printStackTrace();
 							System.exit(1);
 						} catch (InvalidLeaf e) {
-							System.err.println("Invalid column type for given function");
-							e.printStackTrace();
 							System.exit(1);
 						}
 						ret[k] = new DoubleValue(min[k]);		
@@ -386,12 +366,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 							}
 							
 						} catch (SQLException e) {
-							System.err.println("SQLException");
-							e.printStackTrace();
 							System.exit(1);
 						} catch (InvalidLeaf e) {
-							System.err.println("Invalid column type for given function");
-							e.printStackTrace();
 							System.exit(1);
 						}
 						ret[k] = new DoubleValue(max[k]);		
@@ -414,8 +390,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 					try {
 						ret[k] = eval(expr);
 					} catch (SQLException e) {
-						System.err.println("SQLException");
-						e.printStackTrace();
 						System.exit(1);
 					}
 				}
@@ -496,8 +470,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 				lv = new LongValue(next[pos].toLong());
 
 			} catch (InvalidLeaf e) {
-				System.err.println("Invalid column type for given function");
-				e.printStackTrace();
 				System.exit(1);
 			}
 			break;
@@ -505,8 +477,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 			try {
 				lv = new DoubleValue(next[pos].toDouble());
 			} catch (InvalidLeaf e) {
-				System.err.println("Invalid column type for given function");
-				e.printStackTrace();
 				System.exit(1);
 			}
 			break;

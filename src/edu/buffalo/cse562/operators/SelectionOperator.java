@@ -49,12 +49,13 @@ public class SelectionOperator extends Eval implements Operator {
 			return null;
 		
 		try {
+
 			BooleanValue test = (BooleanValue) eval(where);
 			if(!test.getValue()) {
 				return readOneTuple();
 			}
 		} catch (SQLException e) {
-			System.err.println("SQL Exception");
+
 		}
 
 		return next;
@@ -91,6 +92,10 @@ public class SelectionOperator extends Eval implements Operator {
 					break;
 				}
 			}
+		}
+		
+		if(type == null) {
+			System.out.println(arg0);
 		}
 		
 		switch(type) {
