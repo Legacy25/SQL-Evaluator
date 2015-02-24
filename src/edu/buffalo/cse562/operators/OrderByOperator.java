@@ -100,8 +100,7 @@ public class OrderByOperator extends Eval implements Operator {
 			next = child.readOneTuple();
 		}
 		
-		tempList = quicksort(tempList);
-
+		tempList = sortingRoutine(tempList);
 		
 		child.reset();
 	
@@ -109,96 +108,70 @@ public class OrderByOperator extends Eval implements Operator {
 	
 	
 	
-	
-	
-
-	private ArrayList<LeafValue[]> quicksort(ArrayList<LeafValue[]> tempList) {
+	private ArrayList<LeafValue[]> sortingRoutine(ArrayList<LeafValue[]> tempList) {
 		
-		ArrayList<LeafValue[]> smaller = new ArrayList<LeafValue[]>();
-		ArrayList<LeafValue[]> greater = new ArrayList<LeafValue[]>();
-		
-		if(tempList.size() <= 1)
-			return tempList;
-		
-		String type = null;
-		LeafValue pivot = tempList.get(0)[column];
-		
-		if(pivot instanceof LongValue) {
-			type = "int";
-		}
-		else if(pivot instanceof DoubleValue) {
-			type = "double";
-		}
-		else if(pivot instanceof StringValue) {
-			type = "string";
-		}
-		else if(pivot instanceof DateValue) {
-			type = "date";
-		}
 		
 		for(int i=1; i<tempList.size(); i++) {
-			try {
+			int j = i;
+			boolean condition = false;
+			
+			do {
+				String type = null;
+				LeafValue element = tempList.get(0)[column];
+				
+				if(element instanceof LongValue) {
+					type = "int";
+				}
+				else if(element instanceof DoubleValue) {
+					type = "decimal";
+				}
+				else if(element instanceof StringValue) {
+					type = "string";
+				}
+				else if(element instanceof DateValue) {
+					type = "date";
+				}
+				
 				switch(type) {
 				case "int":
-					if(tempList.get(i)[column].toLong() <= pivot.toLong()) {
-						smaller.add(tempList.get(i));
-					}
-					else {
-						greater.add(tempList.get(i));
-					}
-					break;
-					
 				case "decimal":
-					if(tempList.get(i)[column].toDouble() <= pivot.toDouble()) {
-						smaller.add(tempList.get(i));
-					}
-					else {
-						greater.add(tempList.get(i));
+					try {
+						condition = tempList.get(j-1)[column].toDouble() > tempList.get(j)[column].toDouble();
+					} catch (InvalidLeaf e) {
+						
 					}
 					break;
-					
 				case "string":
-					if(tempList.get(i)[column].toString().compareTo(pivot.toString()) <= 0) {
-						smaller.add(tempList.get(i));
-					}
-					else {
-						greater.add(tempList.get(i));
-					}
+				case "date":
+					condition = tempList.get(j-1)[column].toString().compareToIgnoreCase
+									(tempList.get(j)[column].toString()) > 0;
 					break;
 					
-				case "date":
-					if(tempList.get(i)[column].toString().compareTo(pivot.toString()) <= 0) {
-						smaller.add(tempList.get(i));
-					}
-					else {
-						greater.add(tempList.get(i));
-					}
-					break;
 				
 				}
+				
+			
+				if(condition) {
+					LeafValue[] temp = tempList.get(j);
+					tempList.set(j, tempList.get(j-1));
+					tempList.set(j-1, temp);
 					
-			} catch (InvalidLeaf e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+				}
+				
+				j--;
+			} while(j > 0 && condition);
 		}
 		
-		ArrayList<LeafValue[]> sorted = new ArrayList<LeafValue[]>();
-		sorted.addAll(quicksort(smaller));
-		sorted.add(tempList.get(0));
-		sorted.addAll(quicksort(greater));
-		
-		return sorted;
-
+		return tempList;
 	}
+	
+	
+	
+	
+	
+	
+	
 
-	
-	
-	
-	
-	
-	
-	
 	
 	@Override
 	public LeafValue eval(Column arg0) throws SQLException {
