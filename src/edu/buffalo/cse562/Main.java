@@ -10,6 +10,9 @@
 package edu.buffalo.cse562;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -38,9 +41,20 @@ public class Main {
 			}
 		}
 		
-		ArrayList<ParseTree<Operator>> parseTreeList = new ArrayList<ParseTree<Operator>>();
 		
-//		Long start = System.nanoTime();
+//		File file = new File("err.txt");
+//		FileOutputStream fos = null;
+//		try {
+//			fos = new FileOutputStream(file);
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		PrintStream ps = new PrintStream(fos);
+//		System.setErr(ps);
+		
+		
+		ArrayList<ParseTree<Operator>> parseTreeList = new ArrayList<ParseTree<Operator>>();
 		
 		for(File f : sqlFiles) {
 			parseTreeList.add(ParseTreeGenerator.generate(dataDirs, f));
@@ -52,7 +66,5 @@ public class Main {
 			ParseTreeEvaluator.evaluate(i.next());
 		}
 		
-//		Long end = System.nanoTime();
-//		System.out.println((double)(end - start) / 1000000000);
 	}
 }

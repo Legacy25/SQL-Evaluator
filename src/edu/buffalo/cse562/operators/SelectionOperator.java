@@ -84,6 +84,7 @@ public class SelectionOperator extends Eval implements Operator {
 		}
 		else {
 			for(int i=0; i<schema.getColumns().size(); i++) {
+				
 				if(arg0.getWholeColumnName().equalsIgnoreCase(schema.getColumns().get(i).getWholeColumnName().toString())
 						|| arg0.getWholeColumnName().equalsIgnoreCase(schema.getColumns().get(i).getColumnName().toString())) {
 					type = schema.getColumns().get(i).getColumnType();
@@ -92,10 +93,6 @@ public class SelectionOperator extends Eval implements Operator {
 					break;
 				}
 			}
-		}
-		
-		if(type == null) {
-			System.out.println(arg0);
 		}
 		
 		switch(type) {

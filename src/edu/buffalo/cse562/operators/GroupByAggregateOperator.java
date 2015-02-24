@@ -36,14 +36,16 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	
 	private List<SelectItem> selectItems;
 	
-	private double[] sum, min, max, avg;
-	private int[] count;
+	private int index, maxpos, currentpos;
+	private ArrayList<Double[]> sum, min, max, avg;
+	private ArrayList<Integer[]> count;
 	
 	
-	private String currentKey;
-	private HashMap<String, Boolean> seenValues;
+	private HashMap<String, Integer> seenValues;
 	private ArrayList<Column> columns;
 	private boolean[] selectedCols;
+	
+	private ArrayList<LeafValue[]> output;
 	
 	public GroupByAggregateOperator(ArrayList<Column> columns, List<SelectItem> selectItems, Operator child) {
 		
@@ -55,31 +57,134 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		schema = new Schema("GROUP BY [" + childSchema.getTableName() + "]", "__mem__");
 		
 		TypeCache = new HashMap<Column, ColumnInfo>();
+		output = new ArrayList<LeafValue[]>();
 		
-		sum = new double[selectItems.size()];
-		min = new double[selectItems.size()];
-		max = new double[selectItems.size()];
-		avg = new double[selectItems.size()];
-		count = new int[selectItems.size()];
+		sum = new ArrayList<Double[]>();
+		max = new ArrayList<Double[]>();
+		min = new ArrayList<Double[]>();
+		avg = new ArrayList<Double[]>();
+		count = new ArrayList<Integer[]>();
 		
-		Arrays.fill(count, 0);
-		Arrays.fill(avg, 0);
-		Arrays.fill(max, 0);
-		Arrays.fill(min, 0);
-		Arrays.fill(sum, 0);
-
-		currentKey = "";
+		index = 0;
+		
+		
+		maxpos = -1;
+		currentpos = 0;
 
 		selectedCols = new boolean[childSchema.getColumns().size()];
 		Arrays.fill(selectedCols, false);
 		getSelectedColumns();
 		
-		seenValues = new HashMap<String, Boolean>();
+		seenValues = new HashMap<String, Integer>();
 		
 		generateSchemaColumns();
+		generateOutput();
+		
 		reset();
 
 	}
+	
+	
+	
+	private void addCounterRow() {
+		
+		int size = selectItems.size();
+		
+		sum.add(new Double[size]);
+		avg.add(new Double[size]);
+		max.add(new Double[size]);
+		min.add(new Double[size]);
+		count.add(new Integer[size]);
+		
+		
+	}
+	
+	private void resetCounters(int i) {
+
+		Arrays.fill(count.get(i), 0);
+		Arrays.fill(avg.get(i), new Double(0));
+		Arrays.fill(max.get(i), new Double(0));
+		Arrays.fill(min.get(i), new Double(0));
+		Arrays.fill(sum.get(i), new Double(0));
+	}
+	
+	
+	private void initializeMinMax(int i) {
+		
+		int k = 0;
+		Iterator<SelectItem> i1 = selectItems.iterator();
+		while(i1.hasNext()) {
+			
+			SelectItem si = i1.next();
+			
+			if(si instanceof SelectExpressionItem) {
+			
+				SelectExpressionItem sei = (SelectExpressionItem) si;
+				Expression expr = sei.getExpression();
+				
+				if(expr instanceof Function) {
+					
+					if(((Function) expr).getName().equalsIgnoreCase("MAX")
+							|| ((Function) expr).getName().equalsIgnoreCase("MIN")) {
+						try {
+							min.get(i)[k] = max.get(i)[k] = eval(expr).toDouble();
+						} catch (InvalidLeaf | SQLException e) {
+							
+						}
+					}
+				}
+			}
+			k++;
+		}
+		
+	}
+	
+	
+	
+	
+	private void generateOutput() {
+		
+		while((next = child.readOneTuple()) != null) {
+			
+			String key = "";
+			
+			for(int i=0; i<selectedCols.length; i++) {
+				if(selectedCols[i]) {
+					key += next[i].toString();
+				}
+			}
+			
+			
+			if(seenValues.containsKey(key)) {
+				currentpos = seenValues.get(key);
+			}
+			else {
+				maxpos++;
+				currentpos = maxpos;
+				addCounterRow();
+				initializeMinMax(currentpos);
+				
+				output.add(null);
+				seenValues.put(key, currentpos);
+				
+				resetCounters(currentpos);
+				
+				
+			}
+			
+			LeafValue[] ret = generateReturn();
+			output.set(currentpos, ret);
+		}
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	private void getSelectedColumns() {
 		
@@ -95,6 +200,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		}
 		
 	}
+	
+	
 	
 	
 	private void generateSchemaColumns() {
@@ -127,20 +234,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 					col.setColumnType("decimal");
 					if(((Function) expr).getName().equalsIgnoreCase("COUNT")) {
 						col.setColumnType("int");
-					}
-					try {
-						ExpressionList paramList = ((Function) expr).getParameters();
-						if(paramList != null) {
-							Expression e = (Expression) paramList.getExpressions().get(0);
-							if(((Function) expr).getName().equalsIgnoreCase("MIN") || ((Function) expr).getName().equalsIgnoreCase("MAX")) {
-								double res =  eval(e).toDouble();
-								min[k] = max[k] = res;
-							}							
-						}
-					} catch (SQLException e) {
-						System.exit(1);
-					} catch (InvalidLeaf e) {
-						System.err.println("Invalid column type for given function");
 					}
 				}
 				else {
@@ -192,58 +285,29 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	
 	
 	
+	
+	
+	
+	
 	@Override
 	public LeafValue[] readOneTuple() {
-		next = child.readOneTuple();
-		if(next == null)
-			return null;
 		
-		
-		String key = "";
-		
-		for(int i=0; i<selectedCols.length; i++) {
-			if(selectedCols[i]) {
-				key += next[i].toString();
-			}
+		if(index < output.size()) {
+			LeafValue[] ret = output.get(index);
+			index++;
+			return ret;
 		}
-		
-		if(currentKey == "") {
-			if(seenValues.containsKey(key)) {
-				return readOneTuple();
-			}
-			else {
-				currentKey = key;
-			}
-		}
-		
-		if(key.equals(currentKey)) {
 
-			LeafValue[] ret = generateReturn();
-			LeafValue[] readT = readOneTuple();
-			
-			if(readT == null) {
-				child.reset();
-					
-				Arrays.fill(count, 0);
-				Arrays.fill(avg, 0);
-				Arrays.fill(max, 0);
-				Arrays.fill(min, 0);
-				Arrays.fill(sum, 0);
-				
-				seenValues.put(currentKey, true);
-
-				currentKey = "";
-				return ret;
-			}
-			else {
-				return readT;
-			}
-		}
 		
-		return readOneTuple();
-		
+		return null;
 		
 	}
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -280,7 +344,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						try {
 							if(eval(ex) != null) {
 								double res = eval(ex).toDouble();
-								sum[k] += res;
+								sum.get(currentpos)[k] += res;
 							}
 							
 						} catch (SQLException e) {
@@ -288,7 +352,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
-						ret[k] = new DoubleValue(sum[k]);							
+						ret[k] = new DoubleValue(sum.get(currentpos)[k]);
 
 					}
 					
@@ -300,9 +364,9 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						try {
 							if(eval(ex) != null) {
 								double res = eval(ex).toDouble();
-								sum[k] += res;
-								count[k]++;
-								avg[k] = sum[k] / count[k];
+								sum.get(currentpos)[k] += res;
+								count.get(currentpos)[k]++;
+								avg.get(currentpos)[k] = sum.get(currentpos)[k] / count.get(currentpos)[k];
 							}
 							
 						} catch (SQLException e) {
@@ -310,7 +374,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
-						ret[k] = new DoubleValue(avg[k]);		
+						ret[k] = new DoubleValue(avg.get(currentpos)[k]);		
 						
 					}
 					
@@ -321,13 +385,13 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						
 						try {
 							if(eval(ex) != null) {
-								count[k]++;
+								count.get(currentpos)[k]++;
 							}
 							
 						} catch (SQLException e) {
 							System.exit(1);
 						}
-						ret[k] = new DoubleValue(count[k]);		
+						ret[k] = new DoubleValue(count.get(currentpos)[k]);		
 						
 					}
 					
@@ -339,8 +403,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						try {
 							if(eval(ex) != null) {
 								double res = eval(ex).toDouble();
-								if(min[k] > res)
-									min[k] = res;
+								if(min.get(currentpos)[k] > res)
+									min.get(currentpos)[k] = res;
 							}
 							
 						} catch (SQLException e) {
@@ -348,7 +412,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
-						ret[k] = new DoubleValue(min[k]);		
+						ret[k] = new DoubleValue(min.get(currentpos)[k]);		
 						
 					}
 					
@@ -361,8 +425,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						try {
 							if(eval(ex) != null) {
 								double res = eval(ex).toDouble();
-								if(max[k] < res)
-									max[k] = res;
+								if(max.get(currentpos)[k] < res)
+									max.get(currentpos)[k] = res;
 							}
 							
 						} catch (SQLException e) {
@@ -370,7 +434,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
-						ret[k] = new DoubleValue(max[k]);		
+						ret[k] = new DoubleValue(max.get(currentpos)[k]);		
 						
 					}
 					
@@ -422,11 +486,15 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	
 	
 	
+	
+	
+	
+	
 
 	@Override
 	public void reset() {
 		child.reset();
-
+		index = 0;
 		seenValues.clear();
 	}
 
@@ -435,6 +503,12 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		return schema;
 	}
 
+	
+	
+	
+	
+	
+	
 	
 	
 	
