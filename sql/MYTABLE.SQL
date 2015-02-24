@@ -77,11 +77,21 @@ CREATE TABLE LINEITEM ( L_ORDERKEY    INTEGER NOT NULL,
 
 
 select
-	*
+	l_orderkey,
+	o_orderdate,
+	o_shippriority,
+	sum(l_extendedprice * (1 - l_discount)) as revenue
 from
-	customer
-where
-	c_mktsegment = 'BUILDING';
+	customer,
+	orders,
+	lineitem
+group by
+	l_orderkey,
+	o_orderdate,
+	o_shippriority
+order by
+	revenue desc,
+	o_orderdate;
 LIMIT 10
 
 

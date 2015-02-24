@@ -25,9 +25,10 @@ public class OrderByOperator extends Eval implements Operator {
 	private int column;
 	private Operator child;
 	private HashMap<Column, ColumnInfo> TypeCache;
+	private Boolean isAsc;
 
 
-	public OrderByOperator(Expression expr, Operator child) {
+	public OrderByOperator(Expression expr, Boolean isAsc, Operator child) {
 		this.child = child;
 		
 		TypeCache = new HashMap<Column, ColumnInfo>();
@@ -37,6 +38,7 @@ public class OrderByOperator extends Eval implements Operator {
 		schema.setTableName("ORDER BY [" + schema.getTableName() + "]");
 		
 		index = 0;
+		this.isAsc = isAsc;
 		
 		column = 0;		
 		findColumn(expr.toString());
@@ -136,15 +138,26 @@ public class OrderByOperator extends Eval implements Operator {
 				case "int":
 				case "decimal":
 					try {
-						condition = tempList.get(j-1)[column].toDouble() > tempList.get(j)[column].toDouble();
+						if(isAsc) {
+							condition = tempList.get(j-1)[column].toDouble() > tempList.get(j)[column].toDouble();
+						}
+						else {
+							condition = tempList.get(j-1)[column].toDouble() < tempList.get(j)[column].toDouble();
+						}
 					} catch (InvalidLeaf e) {
 						
 					}
 					break;
 				case "string":
 				case "date":
-					condition = tempList.get(j-1)[column].toString().compareToIgnoreCase
-									(tempList.get(j)[column].toString()) > 0;
+					if(isAsc) {
+						condition = tempList.get(j-1)[column].toString().compareToIgnoreCase
+										(tempList.get(j)[column].toString()) > 0;
+					}
+					else {
+						condition = tempList.get(j-1)[column].toString().compareToIgnoreCase
+										(tempList.get(j)[column].toString()) < 0;
+					}
 					break;
 					
 				

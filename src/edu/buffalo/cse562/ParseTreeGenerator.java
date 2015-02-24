@@ -397,8 +397,9 @@ public class ParseTreeGenerator {
 				obe.add((OrderByElement) i.next());
 			}
 			
-			for(int i1=obe.size()-1; i1>=0; i1--)
-				parseTree.insertRoot(new OrderByOperator(obe.get(i1).getExpression(), parseTree.getLeft().getRoot()));
+			for(int i1=obe.size()-1; i1>=0; i1--) {
+				parseTree.insertRoot(new OrderByOperator(obe.get(i1).getExpression(), obe.get(i1).isAsc(), parseTree.getLeft().getRoot()));
+			}
 
 		}
 		
