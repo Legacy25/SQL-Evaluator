@@ -138,7 +138,7 @@ public class SelectionOperator extends Eval implements Operator {
 		case "char":
 		case "varchar":
 		case "string":
-			lv = new StringValue(" "+next[pos].toString()+" ");
+			lv = new StringValue(next[pos].toString());
 			break;
 		case "date":
 			lv = new DateValue(" "+next[pos].toString()+" ");
