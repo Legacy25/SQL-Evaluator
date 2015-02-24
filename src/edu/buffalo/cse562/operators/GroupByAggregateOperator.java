@@ -128,10 +128,14 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						col.setColumnType("int");
 					}
 					try {
-						Expression e = (Expression) ((Function) expr).getParameters().getExpressions().get(0);
-						if(((Function) expr).getName().equalsIgnoreCase("MIN") || ((Function) expr).getName().equalsIgnoreCase("MAX")) {
-							double res =  eval(e).toDouble();
-							min[k] = max[k] = res;
+						@SuppressWarnings("rawtypes")
+						List paramList = (List) ((Function) expr).getParameters();
+						if(paramList != null) {
+							Expression e = (Expression) ((Function) expr).getParameters().getExpressions().get(0);
+							if(((Function) expr).getName().equalsIgnoreCase("MIN") || ((Function) expr).getName().equalsIgnoreCase("MAX")) {
+								double res =  eval(e).toDouble();
+								min[k] = max[k] = res;
+							}							
 						}
 					} catch (SQLException e) {
 						System.err.println("SQLException");
