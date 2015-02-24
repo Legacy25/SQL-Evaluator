@@ -391,11 +391,15 @@ public class ParseTreeGenerator {
 		if(ps.getOrderByElements() != null) {
 			@SuppressWarnings("rawtypes")
 			Iterator i = ps.getOrderByElements().iterator();
+			ArrayList<OrderByElement> obe = new ArrayList<OrderByElement>();
 			
 			while(i.hasNext()) {
-				OrderByElement o = (OrderByElement) i.next();
-				parseTree.insertRoot(new OrderByOperator(o.getExpression(), parseTree.getLeft().getRoot()));
+				obe.add((OrderByElement) i.next());
 			}
+			
+			for(int i1=obe.size()-1; i1>=0; i1--)
+				parseTree.insertRoot(new OrderByOperator(obe.get(i1).getExpression(), parseTree.getLeft().getRoot()));
+
 		}
 		
 		
