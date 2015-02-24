@@ -1,6 +1,7 @@
 package edu.buffalo.cse562.operators;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import edu.buffalo.cse562.Eval;
@@ -22,6 +23,8 @@ public class SelectionOperator extends Eval implements Operator {
 	private Operator child;
 	private LeafValue next[];
 	private HashMap<Column, ColumnInfo> TypeCache;
+	private ArrayList<LeafValue[]> output;
+	private int index;
 	
 	private class ColumnInfo {
 		String type;
@@ -33,6 +36,9 @@ public class SelectionOperator extends Eval implements Operator {
 		}
 	}
 	
+	
+	
+	
 	public SelectionOperator(Expression where, Operator child) {
 		this.where = where;
 		this.child = child;
@@ -40,29 +46,48 @@ public class SelectionOperator extends Eval implements Operator {
 		TypeCache = new HashMap<Column, SelectionOperator.ColumnInfo>();
 		schema = child.getSchema();
 		schema.setTableName("SELECT [" + schema.getTableName() + "]");
+		
+		output = new ArrayList<LeafValue[]>();
+		generateOutput();
+		reset();
 	}
 
-	@Override
-	public LeafValue[] readOneTuple() {
-		next = child.readOneTuple();
-		if(next == null)
-			return null;
-		
-		try {
+	
+	private void generateOutput() {
+		while((next = child.readOneTuple()) != null) {
+			
+			try {
 
-			BooleanValue test = (BooleanValue) eval(where);
-			if(!test.getValue()) {
-				return readOneTuple();
+				BooleanValue test = (BooleanValue) eval(where);
+				if(test.getValue()) {
+					output.add(next);
+				}
+			} catch (SQLException e) {
+
 			}
-		} catch (SQLException e) {
-
+			
 		}
 
-		return next;
+	}
+	
+	
+	@Override
+	public LeafValue[] readOneTuple() {
+		
+		if(index < output.size()) {
+			LeafValue[] ret = output.get(index);
+			index++;
+			return ret;
+		}
+
+		
+		return null;
+		
 	}
 
 	@Override
 	public void reset() {
+		index = 0;
 		child.reset();
 	}
 
