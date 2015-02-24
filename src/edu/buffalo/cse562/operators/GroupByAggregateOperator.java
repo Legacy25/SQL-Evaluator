@@ -19,6 +19,7 @@ import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
@@ -128,10 +129,9 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						col.setColumnType("int");
 					}
 					try {
-						@SuppressWarnings("rawtypes")
-						List paramList = (List) ((Function) expr).getParameters();
+						ExpressionList paramList = ((Function) expr).getParameters();
 						if(paramList != null) {
-							Expression e = (Expression) ((Function) expr).getParameters().getExpressions().get(0);
+							Expression e = (Expression) paramList.getExpressions().get(0);
 							if(((Function) expr).getName().equalsIgnoreCase("MIN") || ((Function) expr).getName().equalsIgnoreCase("MAX")) {
 								double res =  eval(e).toDouble();
 								min[k] = max[k] = res;
@@ -270,8 +270,14 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 				if(expr instanceof Function) {
 					Function fun = (Function) expr;
 					String funName = fun.getName();
-					Expression ex = (Expression) ((Function) expr).getParameters().getExpressions().get(0);
-					
+					ExpressionList paramList = ((Function) expr).getParameters();
+					Expression ex = null;
+					if(paramList != null) {
+						ex = (Expression) ((Function) expr).getParameters().getExpressions().get(0);
+					}
+					else {
+						ex = childSchema.getColumns().get(0);
+					}
 					
 					
 					//===============================SUM=======================================
