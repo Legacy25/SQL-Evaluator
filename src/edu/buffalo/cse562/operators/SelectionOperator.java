@@ -99,7 +99,7 @@ public class SelectionOperator extends Eval implements Operator {
 			try {
 				/*
 				 * Test the validity of the selection predicate
-				 * for the current tuple
+				 * for the current tuple, represented by next[]
 				 */
 				test = (BooleanValue) eval(where);
 			} catch (SQLException e) {
@@ -195,8 +195,7 @@ public class SelectionOperator extends Eval implements Operator {
 			break;
 		default:
 			throw new SQLException();
-		}
-		
+		}		
 		return lv;
 	}
 

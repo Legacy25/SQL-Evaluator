@@ -144,6 +144,9 @@ public class ScanOperator implements Operator {
 		 * Just initialize to reset the buffered reader,
 		 * no other state information is maintained 
 		 * that would need to be reset
+		 * 
+		 * The file is also closed so that we do not run
+		 * out of file resources
 		 */
 		try {
 			fr.close();
