@@ -391,7 +391,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		 * 
 		 * The TypeCache is also generated here
 		 */
-		String newTableName = "GROUP BY [" + childSchema.getTableName() + "]";
+		String newTableName = "\u03C0(\u03A3(" + childSchema.getTableName() + "))";
 		schema = new Schema(newTableName, "__mem__");
 		
 		/* k keeps track of the column we are about to add to the schema */
@@ -405,7 +405,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 			if(si instanceof SelectExpressionItem) {
 				
 				col = new ColumnWithType(
-						new Table(newTableName, newTableName),
+						new Table(),
 						null, 
 						null, 
 						k);

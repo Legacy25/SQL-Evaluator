@@ -32,7 +32,7 @@ public class UnionOperator implements Operator {
 		schema = new Schema(child1.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("UNION [" + child1.getSchema().getTableName() + " AND " + child2.getSchema().getTableName() + "]");
+		schema.setTableName("(" + child1.getSchema().getTableName() + " U " + child2.getSchema().getTableName() + ")");
 
 		/* Initially the flag is off course false */
 		child1Done = false;

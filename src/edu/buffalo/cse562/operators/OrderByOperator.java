@@ -52,7 +52,7 @@ public class OrderByOperator implements Operator {
 		schema = new Schema(child.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("ORDER BY [" + schema.getTableName() + "]");
+		schema.setTableName("\u03C4(" + schema.getTableName() + ")");
 		
 		/* Initializations */
 		tempList = new ArrayList<LeafValue[]>();

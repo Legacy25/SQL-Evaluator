@@ -35,7 +35,7 @@ public class LimitOperator implements Operator {
 		schema = new Schema(child.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("LIMIT [" + schema.getTableName() + "]");
+		schema.setTableName("L(" + schema.getTableName() + ")");
 		
 		/* Initialize the count to 0 */
 		count = 0;

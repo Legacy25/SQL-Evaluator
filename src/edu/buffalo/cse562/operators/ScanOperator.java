@@ -32,6 +32,7 @@ public class ScanOperator implements Operator {
 	
 	private BufferedReader br;
 	private File f;
+	private FileReader fr;
 
 	
 	public ScanOperator(Schema schema) {		
@@ -39,7 +40,7 @@ public class ScanOperator implements Operator {
 		 * Get the initial schema,
 		 * the schemas for the rest of the operators
 		 * are ultimately generated
-		 *  using this information
+		 * using this information
 		 */
 		this.schema = new Schema(schema);
 		/*
@@ -48,12 +49,7 @@ public class ScanOperator implements Operator {
 		 * initial schema is generated during parsetree
 		 * creation
 		 */
-		try {
-			f = new File(schema.getTableFile());
-		} catch (NullPointerException e) {
-			e.printStackTrace();
-		}
-		
+		f = new File(schema.getTableFile());
 	}
 
 	@Override
@@ -63,17 +59,13 @@ public class ScanOperator implements Operator {
 
 	@Override
 	public void initialize() {
-		/*
-		 * For ScanOperator, initialize will open
-		 * the buffered reader, and reset will reset
-		 * the reader
-		 */
+
 		try {
-			br = new BufferedReader(new FileReader(f));
+			fr = new FileReader(f);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-		}	
-		
+		}
+		br = new BufferedReader(fr);	
 	}
 	
 	@Override
@@ -153,6 +145,11 @@ public class ScanOperator implements Operator {
 		 * no other state information is maintained 
 		 * that would need to be reset
 		 */
+		try {
+			fr.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		initialize();
 	}
 

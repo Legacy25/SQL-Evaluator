@@ -76,9 +76,14 @@ public class Schema {
 	@Override
 	public String toString() {
 		/* Return a formatted string containing the schema information */
-		return "Schema for table " + tableName
-				+ "\nTable File: " + tableFile 
-				+ "\nColumns: " + columns;
+		String result = "Schema for table " + tableName	+ "\nTable File: " + tableFile +"\nColumns:\n";
+		
+		for(ColumnWithType col:columns) {
+			result = result + col.toString() + "\t";
+		}
+		
+		result = result + "\n";
+		return result;
 	}
 	
 }

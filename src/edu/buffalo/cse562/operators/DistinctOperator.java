@@ -44,7 +44,7 @@ public class DistinctOperator implements Operator {
 		schema = new Schema(child.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("DISTINCT [" + schema.getTableName() + "]");
+		schema.setTableName("\u03B4(" + schema.getTableName() + ")");
 		
 		/* Initializations */
 		seenValues = new HashMap<String, Boolean>();

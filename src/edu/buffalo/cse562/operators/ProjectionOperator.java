@@ -84,7 +84,7 @@ public class ProjectionOperator extends Eval implements Operator {
 		 * 
 		 * The TypeCache is also generated here
 		 */
-		String newTableName = "PROJECT [" + childSchema.getTableName() + "]";
+		String newTableName = "\u03C0(" + childSchema.getTableName() + ")";
 		schema = new Schema(newTableName, "__mem__");
 		
 		/* k keeps track of the column we are about to add to the schema */
@@ -95,13 +95,14 @@ public class ProjectionOperator extends Eval implements Operator {
 		
 		while(i.hasNext()) {
 			SelectItem si = i.next();
+			
+			col = new ColumnWithType(
+					new Table(),
+					null, 
+					null, 
+					k);
+			
 			if(si instanceof SelectExpressionItem) {
-				
-				col = new ColumnWithType(
-						new Table(newTableName, newTableName),
-						null, 
-						null, 
-						k);
 				
 				SelectExpressionItem sei = (SelectExpressionItem) si;
 				Expression expr = sei.getExpression();

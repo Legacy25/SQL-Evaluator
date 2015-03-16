@@ -17,7 +17,13 @@ import edu.buffalo.cse562.datastructures.ParseTree;
 import edu.buffalo.cse562.operators.Operator;
 
 public class Main {	
-
+	
+	/* 
+	 * Stores the swap directory
+	 * Need application-wide access to this, so a static global
+	 */
+	public static File swapDirectory;
+	
 	public static void main(String[] args) {
 
 		/* Stores the data directories */
@@ -30,14 +36,21 @@ public class Main {
 		 * CLI argument parsing
 		 */		
 		for(int i=0; i<args.length; i++) {
-			if(args[i].equals("--data")) {
+			if(args[i].equalsIgnoreCase("--data")) {
 				dataDirs.add(args[i+1]);
+				i++;
+			}
+			else if(args[i].equalsIgnoreCase("--swap")) {
+				swapDirectory = new File(args[i+1]);
 				i++;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
 			}
 		}
+		
+		/* DEBUG */
+		System.err.println("Swap Directory: " + swapDirectory);
 		
 		/* 
 		 * Keep track of query time locally.
@@ -60,9 +73,10 @@ public class Main {
 			ParseTreeEvaluator.evaluate(i.next());
 		}
 		
+		/* DEBUG */
 		/* Show query times */
-		System.out.println("GNERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-		System.out.println("QUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		System.err.println("GNERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
+		System.err.println("QUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

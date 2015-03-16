@@ -70,7 +70,7 @@ public class SelectionOperator extends Eval implements Operator {
 		schema = new Schema(child.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("SELECT [" + schema.getTableName() + "]");
+		schema.setTableName("\u03C3(" + schema.getTableName() + ")");
 		
 		/* Initializations */
 		TypeCache = new HashMap<Column, ColumnInfo>();

@@ -52,4 +52,11 @@ public class ColumnWithType extends Column {
 	public Column getColumn() {
 		return new Column(this.getTable(), this.getColumnName());
 	}
+	
+	
+	
+	@Override
+	public String toString() {
+		return "("+this.getColumn().getWholeColumnName()+": "+this.getColumnType()+")";
+	}
 }

@@ -72,7 +72,13 @@ public class CrossProductOperator implements Operator {
 	
 	private void buildSchema() {
 		
-		schema = new Schema(child1.getSchema().getTableName()+" JOIN "+child2.getSchema().getTableName(), "__mem__");
+		schema = new Schema(
+				"(" +
+					child1.getSchema().getTableName() +
+					" X " +
+					child2.getSchema().getTableName() +
+					")"
+				, "__mem__");
 
 		/*
 		 * Combine the schemas of the children to
@@ -102,7 +108,8 @@ public class CrossProductOperator implements Operator {
 		 */
 		if(flag) {
 			flag = false;
-			next1 = child1.readOneTuple();
+			if(next1 == null)
+				next1 = child1.readOneTuple();
 			if(next1 == null)
 				return null;
 		}
@@ -111,10 +118,11 @@ public class CrossProductOperator implements Operator {
 		if(next2 == null) {
 			flag = true;
 			child2.reset();
-			return readOneTuple();
+			next1 = child1.readOneTuple();
+			next2 = child2.readOneTuple();
 		}
 		
-		if(next1 == null)
+		if(next1 == null || next2 == null)
 			return null;
 		
 		/*
