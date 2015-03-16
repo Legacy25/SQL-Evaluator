@@ -5,19 +5,46 @@ import edu.buffalo.cse562.schema.Schema;
 
 public class LimitOperator implements Operator {
 
-	private Schema schema;
-	private Operator child;
-	private long limit;
-	private long count;
+	/*
+	 * Limit Operator
+	 * 		Scans over the child operator and
+	 * 		emits only the first l tuples
+	 * 
+	 * Constructor Variables
+	 * 		l, the number of tuples to emit
+	 * 		The child operator
+	 * 
+	 * Working Set Size - 1
+	 */
 	
-	public LimitOperator(long l, Operator child) {
-		this.limit = l;
+	private Schema schema;			/* Schema for this table */
+	
+
+	private long limit;				/* Limit of tuples to emit */
+	private Operator child;			/* The child operator */
+	
+	private long count;				/* Keeps track of the number of tuples
+											emitted till now */
+	
+	
+	public LimitOperator(long limit, Operator child) {
+		this.limit = limit;
 		this.child = child;
 		
-		schema = child.getSchema();
+		/* Schema is unchanged from the child's schema */
+		schema = new Schema(child.getSchema());
+		
+		/* Set an appropriate table name, for book-keeping */
 		schema.setTableName("LIMIT [" + schema.getTableName() + "]");
 		
+		/* Initialize the count to 0 */
 		count = 0;
+	}
+
+
+	@Override
+	public void initialize() {
+		child.initialize();
 	}
 	
 	@Override
@@ -28,13 +55,23 @@ public class LimitOperator implements Operator {
 	@Override
 	public LeafValue[] readOneTuple() {
 		LeafValue[] next = child.readOneTuple();
-		if(next == null)
+		if(next == null) {
+			/*
+			 * No more tuples
+			 */
 			return null;
+		}
 		
 		if(count >= limit) {
+			/* Limit reached */
 			return null;
 		}
 		else {
+			/* 
+			 * Increment the counter before emitting the tuple
+			 * so that we can keep track of the number of tuples
+			 * emitted till now
+			 */
 			count++;
 			return next;
 		}
@@ -42,8 +79,11 @@ public class LimitOperator implements Operator {
 
 	@Override
 	public void reset() {
-		child.reset();	
+		/* Reset the count to 0 */
 		count = 0;
+		
+		/* Now reset the child so that we can begin again */
+		child.reset();	
 	}
 
 }

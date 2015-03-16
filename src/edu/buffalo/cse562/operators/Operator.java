@@ -6,7 +6,8 @@ import edu.buffalo.cse562.schema.Schema;
 public interface Operator {
 
 	public Schema getSchema();
-	
+
+	public void initialize();
 	public LeafValue[] readOneTuple();
 	public void reset();
 	

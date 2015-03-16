@@ -84,25 +84,4 @@ public class ParseTree<T> {
 			break;
 		}
 	}
-	
-	public void printTree(ParseTree<T> parseTree) {
-		
-		@SuppressWarnings("unused")
-		int whiteSpaceCount = 0;
-		
-		for(int i=levels; i>0; i--) {
-
-		}
-		
-	}
-	
-	@SuppressWarnings("unused")
-	private void printWhiteSpace(int count) {
-		
-		String str = "";
-		for(int i=0; i<count; i++)
-			str += " ";
-		
-		System.out.print(str);
-	}
 }

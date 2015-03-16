@@ -28,36 +28,73 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class GroupByAggregateOperator extends Eval implements Operator {
 
-	private Schema schema, childSchema;
-	private Operator child;
+	/*
+	 * Group-By-Aggregate-Projection Operator
+	 * 		Scans over the child operator and does
+	 * 		grouping, aggregation and projection
+	 * 
+	 * Constructor Variables
+	 * 		A list of attributes to group on	
+	 * 		A list of selected items
+	 * 		The child operator
+	 * 
+	 * Working Set Size - Number of groups
+	 */
+	
+	private Schema schema;					/* Schema for this table */
+
+	
+	private List<SelectItem> selectItems;	/* The list of projections */
+	private Operator child;					/* The child operator */
+	
+	
+	private Schema childSchema;				/* The child's schema, required to
+	 												build the new schema */	
+	
+	/* 
+	 * next[] needs to be a class variable, because eval()
+	 * needs access to it
+	 */
 	private LeafValue next[];
 	
+	/*
+	 * TypeCache serves the same purpose as in
+	 * the Selection Operator, refer to comments
+	 * in the Selection Operator to learn more
+	 */
 	private HashMap<Column, ColumnInfo> TypeCache;
 	
-	private List<SelectItem> selectItems;
-	
+	/* Counter variables and state required for grouping */
 	private int index, maxpos, currentpos;
 	private ArrayList<Double[]> sum, min, max, avg;
 	private ArrayList<Integer[]> count;
 	
-	
+	/* Contains mapping of seen values */
 	private HashMap<String, Integer> seenValues;
+	
+	/* List of grouping attributes */
 	private ArrayList<Column> columns;
+	
+	/* Boolean array for convenience */
 	private boolean[] selectedCols;
 	
 	private ArrayList<LeafValue[]> output;
 	
 	public GroupByAggregateOperator(ArrayList<Column> columns, List<SelectItem> selectItems, Operator child) {
-		
 		this.selectItems = selectItems;
 		this.child = child;
 		this.columns = columns;
 		
 		childSchema = child.getSchema();
-		schema = new Schema("GROUP BY [" + childSchema.getTableName() + "]", "__mem__");
 		
+		/*
+		 * Initializations
+		 */
 		TypeCache = new HashMap<Column, ColumnInfo>();
 		output = new ArrayList<LeafValue[]>();
+		seenValues = new HashMap<String, Integer>();
+		selectedCols = new boolean[childSchema.getColumns().size()];
+		Arrays.fill(selectedCols, false);
 		
 		sum = new ArrayList<Double[]>();
 		max = new ArrayList<Double[]>();
@@ -66,26 +103,27 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		count = new ArrayList<Integer[]>();
 		
 		index = 0;
-		
-		
 		maxpos = -1;
 		currentpos = 0;
 
-		selectedCols = new boolean[childSchema.getColumns().size()];
-		Arrays.fill(selectedCols, false);
 		getSelectedColumns();
-		
-		seenValues = new HashMap<String, Integer>();
-		
-		generateSchemaColumns();
-		generateOutput();
-		
-		reset();
-
+		buildSchema();
 	}
-	
-	
-	
+
+	private void getSelectedColumns() {
+		
+		ArrayList<ColumnWithType> schemaCols = childSchema.getColumns();
+		
+		for(int i=0; i<columns.size(); i++) {
+			for(int j=0; j<schemaCols.size(); j++) {
+				if(columns.get(i).getColumnName().equalsIgnoreCase(schemaCols.get(j).getColumnName())
+						|| columns.get(i).getWholeColumnName().equalsIgnoreCase(schemaCols.get(j).getWholeColumnName())) {
+					selectedCols[j] = true;
+				}
+			}
+		}
+		
+	}
 	private void addCounterRow() {
 		
 		int size = selectItems.size();
@@ -98,7 +136,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		
 		
 	}
-	
 	private void resetCounters(int i) {
 
 		Arrays.fill(count.get(i), 0);
@@ -107,8 +144,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		Arrays.fill(min.get(i), new Double(0));
 		Arrays.fill(sum.get(i), new Double(0));
 	}
-	
-	
 	private void initializeMinMax(int i) {
 		
 		int k = 0;
@@ -138,10 +173,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		}
 		
 	}
-	
-	
-	
-	
 	private void generateOutput() {
 		
 		while((next = child.readOneTuple()) != null) {
@@ -177,140 +208,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		}
 		
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	private void getSelectedColumns() {
-		
-		ArrayList<ColumnWithType> schemaCols = childSchema.getColumns();
-		
-		for(int i=0; i<columns.size(); i++) {
-			for(int j=0; j<schemaCols.size(); j++) {
-				if(columns.get(i).getColumnName().equalsIgnoreCase(schemaCols.get(j).getColumnName())
-						|| columns.get(i).getWholeColumnName().equalsIgnoreCase(schemaCols.get(j).getWholeColumnName())) {
-					selectedCols[j] = true;
-				}
-			}
-		}
-		
-	}
-	
-	
-	
-	
-	private void generateSchemaColumns() {
-		next = child.readOneTuple();
-		if(next == null)
-			return;		
-		
-		LeafValue[] ret = new LeafValue[childSchema.getColumns().size() + selectItems.size()];
-		
-		int k = 0;
-		Iterator<SelectItem> i = selectItems.iterator();
-		while(i.hasNext()) {
-			
-			SelectItem si = i.next();
-			
-			if(si instanceof SelectExpressionItem) {
-			
-				ColumnWithType col = new ColumnWithType(new Table(), null, null, k);
-				
-				SelectExpressionItem sei = (SelectExpressionItem) si;
-				Expression expr = sei.getExpression();
-				
-				col.setColumnName(expr.toString());
-				if(sei.getAlias() != null) {
-					col.setColumnName(sei.getAlias());
-				}
-
-				if(expr instanceof Function) {
-					
-					col.setColumnType("decimal");
-					if(((Function) expr).getName().equalsIgnoreCase("COUNT")) {
-						col.setColumnType("int");
-					}
-				}
-				else {
-
-					try {
-						ret[k] = eval(expr);
-					} catch (SQLException e) {
-						System.exit(1);
-					}
-					
-					
-					
-					if(ret[k] instanceof LongValue) {
-						col.setColumnType("int");
-					}
-					else if(ret[k] instanceof DoubleValue) {
-						col.setColumnType("decimal");
-					}
-					else if(ret[k] instanceof StringValue) {
-						col.setColumnType("string");
-					}
-					else if(ret[k] instanceof DateValue) {
-						col.setColumnType("date");
-					}
-				}
-				schema.addColumn(col);
-			}
-			
-			else if(si instanceof AllTableColumns) {
-				AllTableColumns atc = (AllTableColumns) si;
-				Table t = atc.getTable();
-				
-				for(int j=0; j<childSchema.getColumns().size(); j++) {
-					if(childSchema.getColumns().get(j).getTable().getName().equalsIgnoreCase(t.getName())) {
-						schema.addColumn(childSchema.getColumns().get(j));
-					}
-				}
-			}
-			else {
-				System.err.println("Unrecognized SelectItem)");
-				System.exit(1);
-			}
-			
-			k++;
-		}
-		
-		reset();
-	}
-	
-	
-	
-	
-	
-	
-	
-	@Override
-	public LeafValue[] readOneTuple() {
-		
-		if(index < output.size()) {
-			LeafValue[] ret = output.get(index);
-			index++;
-			return ret;
-		}
-
-		
-		return null;
-		
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	public LeafValue[] generateReturn() {
 		LeafValue ret[] = new LeafValue[schema.getColumns().size()];
 		
@@ -484,32 +381,136 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		return ret;
 	}
 	
-	
-	
-	
-	
-	
-	
-
-	@Override
-	public void reset() {
-		child.reset();
-		index = 0;
-		seenValues.clear();
+	private void buildSchema() {
+		/*
+		 * Generates the schema from the child schema and select-items list
+		 * 
+		 * Create a new schema
+		 * and set an appropriate table name,
+		 * for book-keeping
+		 * 
+		 * The TypeCache is also generated here
+		 */
+		String newTableName = "GROUP BY [" + childSchema.getTableName() + "]";
+		schema = new Schema(newTableName, "__mem__");
+		
+		/* k keeps track of the column we are about to add to the schema */
+		int k = 0;
+		
+		ColumnWithType col = null;
+		Iterator<SelectItem> i = selectItems.iterator();
+		
+		while(i.hasNext()) {
+			SelectItem si = i.next();
+			if(si instanceof SelectExpressionItem) {
+				
+				col = new ColumnWithType(
+						new Table(newTableName, newTableName),
+						null, 
+						null, 
+						k);
+				
+				SelectExpressionItem sei = (SelectExpressionItem) si;
+				Expression expr = sei.getExpression();
+				
+				col.setColumnName(expr.toString());
+				if(sei.getAlias() != null) {
+					col.setColumnName(sei.getAlias());
+				}
+				
+				if(expr instanceof Function) {
+					col.setColumnType("double");		// Assume all functions compute double answers
+					schema.addColumn(col);
+				}
+				else {
+					Column arg0 = (Column) expr;
+					for(int j=0; j<childSchema.getColumns().size(); j++) {
+						if(arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(j).getWholeColumnName().toString())
+								|| arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(j).getColumnName().toString())) {
+							
+							col.setColumnType(childSchema.getColumns().get(j).getColumnType());
+							col.setColumnNumber(k);			// Location in the new schema
+							k++;
+							
+							TypeCache.put(
+									arg0 ,
+									new ColumnInfo(
+											col.getColumnType() ,
+											j				// Location in the old schema
+											)
+									);
+							
+							schema.addColumn(col);
+							break;
+						}
+					}
+				}
+			}
+			
+			else if(si instanceof AllTableColumns) {
+				AllTableColumns atc = (AllTableColumns) si;
+				Table t = atc.getTable();
+				
+				for(int j=0; j<childSchema.getColumns().size(); j++) {
+					if(childSchema.getColumns().get(j).getTable().getName().equalsIgnoreCase(t.getName())) {
+						
+						col.setColumnType(childSchema.getColumns().get(j).getColumnType());
+						col.setColumnNumber(k);
+						k++;
+						
+						TypeCache.put(
+								col.getColumn() ,
+								new ColumnInfo(
+										col.getColumnType() ,
+										j
+										)
+								);
+						
+						schema.addColumn(col);
+					}
+				}
+			}
+			else {
+				System.err.println("Unrecognized SelectItem)");
+			}
+		}
 	}
+
 
 	@Override
 	public Schema getSchema() {
 		return schema;
 	}
 
+	@Override
+	public void initialize() {
+		child.initialize();
+		generateOutput();
+	}
 	
-	
-	
-	
-	
-	
-	
+	@Override
+	public LeafValue[] readOneTuple() {
+		
+		if(index < output.size()) {
+			LeafValue[] ret = output.get(index);
+			index++;
+			return ret;
+		}
+
+		
+		return null;
+		
+	}
+
+	@Override
+	public void reset() {
+		/* First clean up state information, and reset the index */
+		index = 0;
+		seenValues.clear();
+		
+		/* Then reset the child operator */
+		child.reset();
+	}
 	
 	
 	@Override

@@ -1,11 +1,7 @@
 package edu.buffalo.cse562.operators;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
-import edu.buffalo.cse562.Eval;
-import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.Schema;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -14,40 +10,61 @@ import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.schema.Column;
 
-public class OrderByOperator extends Eval implements Operator {
+public class OrderByOperator implements Operator {
 
-	private Schema schema;
-	private LeafValue[] next;
-	private ArrayList<LeafValue[]> tempList;
+	/*
+	 * Order By Order
+	 * 		Sorts the child relation
+	 * 
+	 * Constructor Variables
+	 * 		An expression - The sort key attribute
+	 * 		A boolean which determines the sort order, ascending or descending
+	 * 		The child operator
+	 * 
+	 * Working Set Size - The size of the relation
+	 */
+	
+	private Schema schema;			/* Schema for this table */
+	
+	
+	private Expression expr;		/* Kept if needed in future */
+	private Boolean isAsc;			/* Ascending order if true, descending otherwise */
+	private Operator child;			/* The child operator to be sorted */
+	
+	/* Holds the sorted relation in memory */
+	private ArrayList<LeafValue[]> tempList;		
+	
+	/* Holds the index into tempList of the next tuple to be emitted */
 	private int index;
+	
+	/* Holds the index of the sort key attribute */
 	private int column;
-	private Operator child;
-	private HashMap<Column, ColumnInfo> TypeCache;
-	private Boolean isAsc;
 
+	
 
 	public OrderByOperator(Expression expr, Boolean isAsc, Operator child) {
+		this.expr = expr;
+		this.isAsc = isAsc;
 		this.child = child;
 		
-		TypeCache = new HashMap<Column, ColumnInfo>();
-		tempList = new ArrayList<LeafValue[]>();
+		/* Schema is unchanged from the child's schema */
+		schema = new Schema(child.getSchema());
 		
-		schema = child.getSchema();
+		/* Set an appropriate table name, for book-keeping */
 		schema.setTableName("ORDER BY [" + schema.getTableName() + "]");
 		
+		/* Initializations */
+		tempList = new ArrayList<LeafValue[]>();
 		index = 0;
-		this.isAsc = isAsc;
-		
-		column = 0;		
-		findColumn(expr.toString());
-		
-		sort();
+		column = 0;
+		findColumn(this.expr.toString());
 
 	}
 	
-	
+	/*
+	 * Helper function to find the appropriate column index on which to sort
+	 */
 	private void findColumn(String columnName) {
 		
 		for(int i=0; i<schema.getColumns().size(); i++) {
@@ -62,7 +79,6 @@ public class OrderByOperator extends Eval implements Operator {
 		
 	}
 	
-	
 
 	@Override
 	public Schema getSchema() {
@@ -70,49 +86,71 @@ public class OrderByOperator extends Eval implements Operator {
 	}
 
 	@Override
+	public void initialize() {
+		child.initialize();
+		
+		/* 
+		 * Since this is an in-memory operation, initialize will load the
+		 * entire child relation into memory before sorting and then sort
+		 * it in memory
+		 */
+		sort();
+	}
+
+	@Override
 	public LeafValue[] readOneTuple() {
-		
-		
+		/* Emit the next tuple in tempList, if any */
 		if(index < tempList.size()) {
 			LeafValue[] ret = tempList.get(index);
 			index++;
 			return ret;
 		}
 
-		
+		/* Reached end of tempList, no more tuples to reurn */
 		return null;
-		
-		
 	}
 
 	@Override
 	public void reset() {
+		/* First set the index to 0 */
 		index = 0;
+		
+		/* Then reset the child */
 		child.reset();
-
 	}
 
 	
 	private void sort() {
+		/* The sort function, calls on the sorting routine */
 		
+		/* Load entire child relation into tempList */
 		LeafValue[] next = child.readOneTuple();
-		
 		while (next != null) {
 			tempList.add(next);
 			next = child.readOneTuple();
 		}
 		
+		/* Sort tempList using the sorting routine */
 		tempList = sortingRoutine(tempList);
 		
+		/* 
+		 * Reset the child since we read it
+		 * This preserves the semantics of the Operator interface
+		 */
 		child.reset();
 	
 	}
 	
-	
-	
 	private ArrayList<LeafValue[]> sortingRoutine(ArrayList<LeafValue[]> tempList) {
-		
-		
+		/* 
+		 * The sorting routine is decoupled from the sort function
+		 * to provide flexibility between different sort
+		 * algorithms
+		 * 
+		 * Presently we are using insertion sort, but QuickSort or MergeSort
+		 * will obviously provide much better results, this is one easy optimization
+		 * for the vanilla in-memory order by operator
+		 */
 		for(int i=1; i<tempList.size(); i++) {
 			int j = i;
 			boolean condition = false;
@@ -176,75 +214,6 @@ public class OrderByOperator extends Eval implements Operator {
 		}
 		
 		return tempList;
-	}
-	
-	
-	
-	
-	
-	
-	
-
-	
-	@Override
-	public LeafValue eval(Column arg0) throws SQLException {
-		
-		LeafValue lv = null;
-		String type = null;
-		int pos = 0;
-		
-		if(TypeCache.containsKey(arg0)) {
-
-			type = TypeCache.get(arg0).type;
-			pos = TypeCache.get(arg0).pos;
-		}
-		else {
-
-			for(int i=0; i<schema.getColumns().size(); i++) {
-				
-				if(arg0.getWholeColumnName().equalsIgnoreCase(schema.getColumns().get(i).getWholeColumnName().toString())
-						|| arg0.getWholeColumnName().equalsIgnoreCase(schema.getColumns().get(i).getColumnName().toString())) {
-					type = schema.getColumns().get(i).getColumnType();
-					pos = i;
-					TypeCache.put(arg0, new ColumnInfo(type, pos));
-					break;
-				}
-			}
-		}
-		
-		switch(type) {
-		case "int":
-			try {
-				lv = new LongValue(next[pos].toLong());
-
-			} catch (InvalidLeaf e) {
-				System.err.println("Invalid column type for given function");
-				e.printStackTrace();
-				System.exit(1);
-			}
-			break;
-		case "decimal":
-			try {
-				lv = new DoubleValue(next[pos].toDouble());
-			} catch (InvalidLeaf e) {
-				System.err.println("Invalid column type for given function");
-				e.printStackTrace();
-				System.exit(1);
-			}
-			break;
-		case "char":
-		case "varchar":
-		case "string":
-			lv = new StringValue(next[pos].toString());
-			break;
-		case "date":
-			lv = new DateValue(" "+next[pos].toString()+" ");
-			break;
-		default:
-			throw new SQLException();
-		}
-		
-		return lv;
 	}
 
 }

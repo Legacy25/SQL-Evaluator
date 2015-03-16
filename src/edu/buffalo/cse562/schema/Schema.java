@@ -5,16 +5,44 @@ import java.util.Arrays;
 
 public class Schema {
 
+	/*
+	 * A class to encapsulate the Schema information of a relation.
+	 * 
+	 * tableName 	- The name of the table
+	 * tableFile 	- In case the relation is a table on disk, this attribute
+	 * 					contains the location and name of that file, otherwise
+	 * 					it is set to "__mem__" indicating that it is a relation
+	 * 					in memory
+	 * 
+	 * columns		- A list of the columns of this relation
+	 */
+	
 	private String tableName;
 	private String tableFile;
 	private ArrayList<ColumnWithType> columns;
 	
+	
 	public Schema(String tableName, String tableFile) {
 		this.tableName = tableName;
 		this.tableFile = tableFile;
+		
+		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
 	}
+	
+	public Schema(Schema schema) {
+		this.tableName = schema.tableName;
+		this.tableFile = schema.tableFile;
+		this.columns = new ArrayList<ColumnWithType>();
+		
+		for(int i=0; i<schema.columns.size(); i++) {
+			columns.add(schema.columns.get(i));
+		}
+	}
 
+	
+	
+	/* Getters and Setters */
 	public String getTableName() {
 		return tableName;
 	}
@@ -43,8 +71,11 @@ public class Schema {
 		this.columns.addAll(Arrays.asList(columns));
 	}
 	
+	
+	
+	@Override
 	public String toString() {
-		
+		/* Return a formatted string containing the schema information */
 		return "Schema for table " + tableName
 				+ "\nTable File: " + tableFile 
 				+ "\nColumns: " + columns;

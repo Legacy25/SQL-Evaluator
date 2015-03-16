@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.SQLException;
 
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -14,102 +13,147 @@ import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
 import edu.buffalo.cse562.schema.Schema;
 
-
-/*
- * The ScanOperator is used to scan a file and return one row at a time
- * The file to be read is known from the Schema
- */
 public class ScanOperator implements Operator {
 
+	/*
+	 * Scan Operator
+	 * 		Scans over a file, known from the schema
+	 * 		and emits a tuple as a LeafValue array
+	 * 
+	 * Constructor Variables
+	 * 		A schema, representing the relation
+	 * 		to be scanned
+	 * 
+	 * Working Set Size - 1
+	 */
+	
 	private Schema schema;
+	
+	
 	private BufferedReader br;
 	private File f;
-	
-	
+
 	
 	public ScanOperator(Schema schema) {		
-		this.schema = schema;
+		/* 
+		 * Get the initial schema,
+		 * the schemas for the rest of the operators
+		 * are ultimately generated
+		 *  using this information
+		 */
+		this.schema = new Schema(schema);
+		/*
+		 * Make a new File object using the file location
+		 * information in the relation's schema. The
+		 * initial schema is generated during parsetree
+		 * creation
+		 */
 		try {
 			f = new File(schema.getTableFile());
 		} catch (NullPointerException e) {
-			System.err.println("Could not find schema");
 			e.printStackTrace();
 		}
-		br = null;
-		reset();
 		
 	}
-	
-	
+
+	@Override
+	public Schema getSchema() {
+		return schema;
+	}
+
+	@Override
+	public void initialize() {
+		/*
+		 * For ScanOperator, initialize will open
+		 * the buffered reader, and reset will reset
+		 * the reader
+		 */
+		try {
+			br = new BufferedReader(new FileReader(f));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}	
+		
+	}
 	
 	@Override
 	public LeafValue[] readOneTuple() {
 		if(br == null) {
+			/* 
+			 * May happen if the operator is not 
+			 * initialized before use
+			 */
 			return null;
 		}
 
 		String line = null;
 		try {
-			if((line = br.readLine()) == null) {
-				return null;
-			}
-			String cols[] = line.split("\\|");
-			LeafValue ret[] = new LeafValue[cols.length];
-			
-			for(int i=0; i<cols.length; i++) {
-				
-				String type = schema.getColumns().get(i).getColumnType();
-				
-				switch(type) {
-				case "int":
-					ret[i] = new LongValue(cols[i]);
-					break;
-				
-				case "decimal":
-					ret[i] = new DoubleValue(cols[i]);
-					break;
-				
-				case "char":
-				case "varchar":
-				case "string":
-					// Blank spaces are appended to account for JSQLParser's weirdness
-					ret[i] = new StringValue(" "+cols[i]+" ");
-					break;
-
-				case "date":
-					// Blank spaces are appended to account for JSQLParser's weirdness
-					ret[i] = new DateValue(" "+cols[i]+" ");
-					break;
-				
-				default:
-					throw new SQLException();
-				}
-			}
-			
-			return ret;
-			
+			/* Read the next '|' delimited line which is the
+			 * next tuple
+			 */
+			line = br.readLine();
 		} catch (IOException e) {
-			System.err.println("IOException on Scan Operator");
-		} catch (SQLException e) {
-
+			e.printStackTrace();
 		}
-		return null;
+		
+		if(line == null) {
+			/*
+			 * No more tuples to be read
+			 */
+			return null;
+		}
+		
+		/* Split the tuple into attributes using the '|' delimiter */
+		String cols[] = line.split("\\|");
+		
+		/* LeafValue array that will hold the tuple to be returned */
+		LeafValue ret[] = new LeafValue[cols.length];
+		
+		/* 
+		 * Iterate over each column according to schema's type information
+		 * and populate the ret array with appropriate value and LeafValue
+		 * type
+		 */
+		for(int i=0; i<cols.length; i++) {
+			String type = schema.getColumns().get(i).getColumnType();
+			
+			switch(type) {
+			case "int":
+				ret[i] = new LongValue(cols[i]);
+				break;
+			
+			case "decimal":
+				ret[i] = new DoubleValue(cols[i]);
+				break;
+			
+			case "char":
+			case "varchar":
+			case "string":
+				/* Blank spaces are appended to account for JSQLParser's weirdness */
+				ret[i] = new StringValue(" "+cols[i]+" ");
+				break;
+
+			case "date":
+				/* Same deal as string */
+				ret[i] = new DateValue(" "+cols[i]+" ");
+				break;
+			default:
+				System.err.println("Unknown column type");
+			}
+		}
+		
+		/* Return the generated tuple */
+		return ret;
 	}
 
 	@Override
 	public void reset() {
-		try {
-			br = new BufferedReader(new FileReader(f));
-		} catch (FileNotFoundException e) {
-			System.err.println("File "+ f + " not found");
-		}
-	}
-	
-	
-
-	@Override
-	public Schema getSchema() {
-		return schema;
+		/* 
+		 * Just initialize to reset the buffered reader,
+		 * no other state information is maintained 
+		 * that would need to be reset
+		 */
+		initialize();
 	}
 
 }

@@ -24,113 +24,174 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class ProjectionOperator extends Eval implements Operator {
 
-	private Schema schema, childSchema;
-	private Operator child;
+	/*
+	 * Projection Operator
+	 * 		Scans over the child operator and
+	 * 		projects only the columns represented
+	 * 		by the List of selectItems
+	 * 
+	 * Constructor Variables
+	 * 		A list of selected items
+	 * 		The child operator
+	 * 
+	 * Working Set Size - 1
+	 */
+	
+	private Schema schema;					/* Schema for this table */
+
+	
+	private List<SelectItem> selectItems;	/* The list of projections */
+	private Operator child;					/* The child operator */
+	
+	
+	private Schema childSchema;				/* The child's schema, required to
+	 												build the new schema */	
+	
+	/* 
+	 * next[] needs to be a class variable, because eval()
+	 * needs access to it
+	 */
 	private LeafValue next[];
 	
+	/*
+	 * TypeCache serves the same purpose as in
+	 * the Selection Operator, refer to comments
+	 * in the Selection Operator to learn more
+	 */
 	private HashMap<Column, ColumnInfo> TypeCache;
 	
-	private List<SelectItem> selectItems;
 	
 	public ProjectionOperator(List<SelectItem> selectItems, Operator child) {
-		
 		this.selectItems = selectItems;
 		this.child = child;
 		
 		childSchema = child.getSchema();
-		schema = new Schema("PROJECT [" + childSchema.getTableName() + "]", "__mem__");
 		
+		/* Initializations */
 		TypeCache = new HashMap<Column, ColumnInfo>();
 		
-		generateSchemaColumns();
-
+		/* Build the new schema */
+		buildSchema();
 	}
 	
-	
-	private void generateSchemaColumns() {
-		next = child.readOneTuple();
-		if(next == null)
-			return;		
+	private void buildSchema() {
+		/*
+		 * Generates the schema from the child schema and select-items list
+		 * 
+		 * Create a new schema
+		 * and set an appropriate table name,
+		 * for book-keeping
+		 * 
+		 * The TypeCache is also generated here
+		 */
+		String newTableName = "PROJECT [" + childSchema.getTableName() + "]";
+		schema = new Schema(newTableName, "__mem__");
 		
-		LeafValue[] ret = new LeafValue[childSchema.getColumns().size() + selectItems.size()];
-		
+		/* k keeps track of the column we are about to add to the schema */
 		int k = 0;
+		
+		ColumnWithType col = null;
 		Iterator<SelectItem> i = selectItems.iterator();
+		
 		while(i.hasNext()) {
-			
 			SelectItem si = i.next();
-			
 			if(si instanceof SelectExpressionItem) {
-			
-				ColumnWithType col = new ColumnWithType(new Table(), null, null, k);
+				
+				col = new ColumnWithType(
+						new Table(newTableName, newTableName),
+						null, 
+						null, 
+						k);
 				
 				SelectExpressionItem sei = (SelectExpressionItem) si;
 				Expression expr = sei.getExpression();
+				Column arg0 = (Column) expr;
 				
 				col.setColumnName(expr.toString());
 				if(sei.getAlias() != null) {
 					col.setColumnName(sei.getAlias());
 				}
-
-				try {
-					ret[k] = eval(expr);
-				} catch (SQLException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
 				
-				
-				
-				if(ret[k] instanceof LongValue) {
-					col.setColumnType("int");
+				for(int j=0; j<childSchema.getColumns().size(); j++) {
+					if(arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(j).getWholeColumnName().toString())
+							|| arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(j).getColumnName().toString())) {
+						
+						col.setColumnType(childSchema.getColumns().get(j).getColumnType());
+						col.setColumnNumber(k);			// Location in the new schema
+						k++;
+						
+						TypeCache.put(
+								arg0 ,
+								new ColumnInfo(
+										col.getColumnType() ,
+										j				// Location in the old schema
+										)
+								);
+						
+						schema.addColumn(col);
+						break;
+					}
 				}
-				else if(ret[k] instanceof DoubleValue) {
-					col.setColumnType("decimal");
-				}
-				else if(ret[k] instanceof StringValue) {
-					col.setColumnType("string");
-				}
-				else if(ret[k] instanceof DateValue) {
-					col.setColumnType("date");
-				}
-				
-				schema.addColumn(col);
 			}
 			
 			else if(si instanceof AllTableColumns) {
-				
 				AllTableColumns atc = (AllTableColumns) si;
 				Table t = atc.getTable();
 				
 				for(int j=0; j<childSchema.getColumns().size(); j++) {
 					if(childSchema.getColumns().get(j).getTable().getName().equalsIgnoreCase(t.getName())) {
-						schema.addColumn(childSchema.getColumns().get(j));
+						
+						col.setColumnType(childSchema.getColumns().get(j).getColumnType());
+						col.setColumnNumber(k);
+						k++;
+						
+						TypeCache.put(
+								col.getColumn() ,
+								new ColumnInfo(
+										col.getColumnType() ,
+										j
+										)
+								);
+						
+						schema.addColumn(col);
 					}
 				}
 			}
 			else {
 				System.err.println("Unrecognized SelectItem)");
-				System.exit(1);
 			}
-			
-			k++;
 		}
-		
-		reset();
 	}
 	
+
+
+	@Override
+	public Schema getSchema() {
+		return schema;
+	}
 	
+
+	@Override
+	public void initialize() {
+		child.initialize();
+	}
 	
 	@Override
 	public LeafValue[] readOneTuple() {
 		next = child.readOneTuple();
-		if(next == null)
+		if(next == null) {
+			/*
+			 * No more tuples
+			 */
 			return null;
-		
-		
+		}
 		
 		LeafValue[] ret = new LeafValue[schema.getColumns().size()];
 		
+		/*
+		 * Iterate over each select item and compute the 
+		 * projection accordingly
+		 */
 		int k = 0;
 		Iterator<SelectItem> i = selectItems.iterator();
 		while(i.hasNext()) {
@@ -146,7 +207,6 @@ public class ProjectionOperator extends Eval implements Operator {
 					ret[k] = eval(expr);
 				} catch (SQLException e) {
 					e.printStackTrace();
-					System.exit(1);
 				}
 				
 			}
@@ -166,7 +226,6 @@ public class ProjectionOperator extends Eval implements Operator {
 			}
 			else {
 				System.err.println("Unrecognized SelectItem");
-				System.exit(1);
 			}
 			
 			k++;
@@ -177,39 +236,24 @@ public class ProjectionOperator extends Eval implements Operator {
 
 	@Override
 	public void reset() {
+		/* 
+		 * Just need to reset the child,
+		 * no other state information is kept,
+		 * so nothing else to clean up
+		 */
 		child.reset();
 	}
-
-	@Override
-	public Schema getSchema() {
-		return schema;
-	}
+	
+	
 
 	@Override
 	public LeafValue eval(Column arg0) throws SQLException {
-		
+		/* Necessary initializations */
 		LeafValue lv = null;
-		String type = null;
-		int pos = 0;
+
+		String type = TypeCache.get(arg0).type;
+		int pos = TypeCache.get(arg0).pos;
 		
-		if(TypeCache.containsKey(arg0)) {
-
-			type = TypeCache.get(arg0).type;
-			pos = TypeCache.get(arg0).pos;
-		}
-		else {
-
-			for(int i=0; i<childSchema.getColumns().size(); i++) {
-				
-				if(arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(i).getWholeColumnName().toString())
-						|| arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(i).getColumnName().toString())) {
-					type = childSchema.getColumns().get(i).getColumnType();
-					pos = i;
-					TypeCache.put(arg0, new ColumnInfo(type, pos));
-					break;
-				}
-			}
-		}
 		
 		switch(type) {
 		case "int":
@@ -245,4 +289,5 @@ public class ProjectionOperator extends Eval implements Operator {
 		
 		return lv;
 	}
+	
 }
