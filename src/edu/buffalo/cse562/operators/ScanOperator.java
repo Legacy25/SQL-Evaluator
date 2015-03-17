@@ -51,6 +51,10 @@ public class ScanOperator implements Operator {
 		 */
 		f = new File(schema.getTableFile());
 	}
+	
+	public void generateSchemaName() {
+		
+	}
 
 	@Override
 	public Schema getSchema() {
@@ -164,6 +168,16 @@ public class ScanOperator implements Operator {
 	@Override
 	public Operator getRight() {
 		return null;
+	}
+	
+	@Override
+	public void setLeft(Operator o) {
+
+	}
+
+	@Override
+	public void setRight(Operator o) {
+
 	}
 
 }

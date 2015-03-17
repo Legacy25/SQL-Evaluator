@@ -44,10 +44,15 @@ public class DistinctOperator implements Operator {
 		schema = new Schema(child.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("\u03B4(" + schema.getTableName() + ")");
+		generateSchemaName();
 		
 		/* Initializations */
 		seenValues = new HashMap<String, Boolean>();
+	}
+	
+	public void generateSchemaName() {
+		child.generateSchemaName();
+		schema.setTableName("\u03B4(" + schema.getTableName() + ")");
 	}
 	
 	
@@ -108,6 +113,16 @@ public class DistinctOperator implements Operator {
 	@Override
 	public Operator getRight() {
 		return null;
+	}
+
+	@Override
+	public void setLeft(Operator o) {
+		child = o;
+	}
+	
+	@Override
+	public void setRight(Operator o) {
+		
 	}
 
 }

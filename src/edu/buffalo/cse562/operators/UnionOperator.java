@@ -32,7 +32,7 @@ public class UnionOperator implements Operator {
 		schema = new Schema(child1.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("(" + child1.getSchema().getTableName() + " U " + child2.getSchema().getTableName() + ")");
+		generateSchemaName();
 
 		/* Initially the flag is off course false */
 		child1Done = false;
@@ -43,6 +43,15 @@ public class UnionOperator implements Operator {
 	public void initialize() {
 		child1.initialize();
 		child2.initialize();
+	}
+
+
+	@Override
+	public void generateSchemaName() {
+		child1.generateSchemaName();
+		child2.generateSchemaName();
+		
+		schema.setTableName("(" + child1.getSchema().getTableName() + " U " + child2.getSchema().getTableName() + ")");
 	}
 	
 	@Override
@@ -94,6 +103,16 @@ public class UnionOperator implements Operator {
 	@Override
 	public Operator getRight() {
 		return child2;
+	}
+	
+	@Override
+	public void setLeft(Operator o) {
+		child1 = o;
+	}
+
+	@Override
+	public void setRight(Operator o) {
+		child2 = o;
 	}
 
 }

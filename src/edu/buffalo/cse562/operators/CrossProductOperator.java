@@ -48,7 +48,7 @@ public class CrossProductOperator implements Operator {
 	
 	private Operator child1, child2;		/* The two relations to cross product */
 
-	boolean flag;							/*The flag to keep tracck of child2 */
+	boolean flag;							/*The flag to keep track of child2 */
 	
 	/* 
 	 * These need to have class scope to preserve values
@@ -72,13 +72,8 @@ public class CrossProductOperator implements Operator {
 	
 	private void buildSchema() {
 		
-		schema = new Schema(
-				"(" +
-					child1.getSchema().getTableName() +
-					" X " +
-					child2.getSchema().getTableName() +
-					")"
-				, "__mem__");
+		schema = new Schema();
+		generateSchemaName();
 
 		/*
 		 * Combine the schemas of the children to
@@ -92,6 +87,17 @@ public class CrossProductOperator implements Operator {
 			schema.addColumn(c);
 		}
 		
+	}
+	
+	public void generateSchemaName() {
+		child1.generateSchemaName();
+		child2.generateSchemaName();
+		
+		schema.setTableName(
+				child1.getSchema().getTableName() +
+				" X " +
+				child2.getSchema().getTableName()
+		);
 	}
 
 	@Override
@@ -165,6 +171,16 @@ public class CrossProductOperator implements Operator {
 	@Override
 	public Operator getRight() {
 		return child2;
+	}
+	
+	@Override
+	public void setLeft(Operator o) {
+		child1 = o;
+	}
+
+	@Override
+	public void setRight(Operator o) {
+		child2 = o;
 	}
 
 }

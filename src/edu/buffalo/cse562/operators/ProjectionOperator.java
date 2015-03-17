@@ -84,8 +84,8 @@ public class ProjectionOperator extends Eval implements Operator {
 		 * 
 		 * The TypeCache is also generated here
 		 */
-		String newTableName = "\u03C0(" + childSchema.getTableName() + ")";
-		schema = new Schema(newTableName, "__mem__");
+		schema = new Schema();
+		generateSchemaName();
 		
 		/* k keeps track of the column we are about to add to the schema */
 		int k = 0;
@@ -165,6 +165,12 @@ public class ProjectionOperator extends Eval implements Operator {
 	}
 	
 
+	@Override
+	public void generateSchemaName() {
+		child.generateSchemaName();
+		schema.setTableName("\u03C0(" + childSchema.getTableName() + ")");
+	}
+	
 
 	@Override
 	public Schema getSchema() {
@@ -299,6 +305,16 @@ public class ProjectionOperator extends Eval implements Operator {
 	@Override
 	public Operator getRight() {
 		return null;
+	}
+	
+	@Override
+	public void setLeft(Operator o) {
+		child = o;
+	}
+
+	@Override
+	public void setRight(Operator o) {
+
 	}
 	
 }

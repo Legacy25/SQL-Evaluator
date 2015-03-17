@@ -391,8 +391,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		 * 
 		 * The TypeCache is also generated here
 		 */
-		String newTableName = "\u03C0(\u03A3(" + childSchema.getTableName() + "))";
-		schema = new Schema(newTableName, "__mem__");
+		schema = new Schema();
+		generateSchemaName();
 		
 		/* k keeps track of the column we are about to add to the schema */
 		int k = 0;
@@ -578,5 +578,21 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	@Override
 	public Operator getRight() {
 		return null;
+	}
+	
+	@Override
+	public void setLeft(Operator o) {
+		child = o;
+	}
+
+	@Override
+	public void setRight(Operator o) {
+
+	}
+
+	@Override
+	public void generateSchemaName() {
+		child.generateSchemaName();
+		schema.setTableName("\u03C0(\u03A3(" + child.getSchema().getTableName() + "))");
 	}
 }

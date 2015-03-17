@@ -39,6 +39,14 @@ public class Schema {
 			columns.add(new ColumnWithType(schema.columns.get(i)));
 		}
 	}
+	
+	public Schema() {
+		this.tableName = "";
+		this.tableFile = "IN-MEMORY";
+		
+		/* Initializations */
+		columns = new ArrayList<ColumnWithType>();
+	}
 
 	
 	

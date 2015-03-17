@@ -35,12 +35,16 @@ public class LimitOperator implements Operator {
 		schema = new Schema(child.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("L(" + schema.getTableName() + ")");
+		generateSchemaName();
 		
 		/* Initialize the count to 0 */
 		count = 0;
 	}
 
+	public void generateSchemaName() {
+		child.generateSchemaName();
+		schema.setTableName("L(" + child.getSchema().getTableName() + ")");
+	}
 
 	@Override
 	public void initialize() {
@@ -94,6 +98,16 @@ public class LimitOperator implements Operator {
 	@Override
 	public Operator getRight() {
 		return null;
+	}
+	
+	@Override
+	public void setLeft(Operator o) {
+		child = o;
+	}
+
+	@Override
+	public void setRight(Operator o) {
+
 	}
 
 }

@@ -70,12 +70,16 @@ public class SelectionOperator extends Eval implements Operator {
 		schema = new Schema(child.getSchema());
 		
 		/* Set an appropriate table name, for book-keeping */
-		schema.setTableName("\u03C3(" + schema.getTableName() + ")");
+		generateSchemaName();
 		
 		/* Initializations */
 		TypeCache = new HashMap<Column, ColumnInfo>();
 	}
 
+	public void generateSchemaName() {
+		child.generateSchemaName();
+		schema.setTableName("\u03C3(" + child.getSchema().getTableName() + ")");
+	}
 	
 	@Override
 	public Schema getSchema() {
@@ -207,6 +211,20 @@ public class SelectionOperator extends Eval implements Operator {
 	@Override
 	public Operator getRight() {
 		return null;
+	}
+	
+	public Expression getWhere() {
+		return where;
+	}
+	
+	@Override
+	public void setLeft(Operator o) {
+		child = o;
+	}
+
+	@Override
+	public void setRight(Operator o) {
+
 	}
 
 }
