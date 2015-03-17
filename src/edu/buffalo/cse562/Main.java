@@ -49,7 +49,7 @@ public class Main {
 		}
 		
 		/* DEBUG */
-		System.err.println("Swap Directory: " + swapDirectory);
+//		System.err.println("Swap Directory: " + swapDirectory);
 		
 		/* 
 		 * Keep track of query time locally.
@@ -65,10 +65,10 @@ public class Main {
 
 			/* DEBUG */
 			/* Show the unoptimized Query Plan */
-			System.err.println(
-					"Unoptimized:\n\n" +
-					parseTreeList.get(parseTreeList.size()-1).getSchema()
-					);
+//			System.err.println(
+//					"Unoptimized:\n\n" +
+//					parseTreeList.get(parseTreeList.size()-1).getSchema()
+//					);
 		}
 		
 		/* Optimize each parse-tree */
@@ -79,10 +79,10 @@ public class Main {
 			
 			/* DEBUG */
 			/* Show the optimized Query Plan */
-			System.err.println(
-					"Optimized:\n\n" +
-					parseTree.getSchema()
-					);
+//			System.err.println(
+//					"Optimized:\n\n" +
+//					parseTree.getSchema()
+//					);
 		}
 		
 		long generateTime = System.nanoTime();
@@ -95,8 +95,8 @@ public class Main {
 		
 		/* DEBUG */
 		/* Show query times */
-		System.err.println("\nGNERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+//		System.err.println("\nGNERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
+//		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

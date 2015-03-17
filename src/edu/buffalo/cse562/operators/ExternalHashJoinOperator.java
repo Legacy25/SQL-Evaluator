@@ -130,6 +130,7 @@ public class ExternalHashJoinOperator implements Operator {
 		}
 		
 		for(Expression clause : clauseList) {
+			System.out.println(where);
 			BinaryExpression binaryClause = (BinaryExpression) clause;
 			Column left = (Column) binaryClause.getLeftExpression();
 			Column right = (Column) binaryClause.getRightExpression();
