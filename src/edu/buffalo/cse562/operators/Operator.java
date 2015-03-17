@@ -11,4 +11,7 @@ public interface Operator {
 	public LeafValue[] readOneTuple();
 	public void reset();
 	
+	public Operator getLeft();
+	public Operator getRight();
+	
 }

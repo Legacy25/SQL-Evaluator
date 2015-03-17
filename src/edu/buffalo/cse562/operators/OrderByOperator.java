@@ -216,4 +216,14 @@ public class OrderByOperator implements Operator {
 		return tempList;
 	}
 
+	@Override
+	public Operator getLeft() {
+		return child;
+	}
+
+	@Override
+	public Operator getRight() {
+		return null;
+	}
+
 }

@@ -86,4 +86,14 @@ public class LimitOperator implements Operator {
 		child.reset();	
 	}
 
+	@Override
+	public Operator getLeft() {
+		return child;
+	}
+
+	@Override
+	public Operator getRight() {
+		return null;
+	}
+
 }

@@ -86,4 +86,14 @@ public class UnionOperator implements Operator {
 		child2.reset();
 	}
 
+	@Override
+	public Operator getLeft() {
+		return child1;
+	}
+
+	@Override
+	public Operator getRight() {
+		return child2;
+	}
+
 }

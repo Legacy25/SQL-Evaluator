@@ -36,7 +36,7 @@ public class Schema {
 		this.columns = new ArrayList<ColumnWithType>();
 		
 		for(int i=0; i<schema.columns.size(); i++) {
-			columns.add(schema.columns.get(i));
+			columns.add(new ColumnWithType(schema.columns.get(i)));
 		}
 	}
 

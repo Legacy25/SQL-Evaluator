@@ -156,4 +156,14 @@ public class ScanOperator implements Operator {
 		initialize();
 	}
 
+	@Override
+	public Operator getLeft() {
+		return null;
+	}
+
+	@Override
+	public Operator getRight() {
+		return null;
+	}
+
 }

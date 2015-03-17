@@ -157,4 +157,14 @@ public class CrossProductOperator implements Operator {
 		return schema;
 	}
 
+	@Override
+	public Operator getLeft() {
+		return child1;
+	}
+
+	@Override
+	public Operator getRight() {
+		return child2;
+	}
+
 }

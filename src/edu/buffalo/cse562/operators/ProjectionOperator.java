@@ -290,5 +290,15 @@ public class ProjectionOperator extends Eval implements Operator {
 		
 		return lv;
 	}
+
+	@Override
+	public Operator getLeft() {
+		return child;
+	}
+
+	@Override
+	public Operator getRight() {
+		return null;
+	}
 	
 }

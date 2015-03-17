@@ -63,20 +63,41 @@ public class Main {
 		ArrayList<ParseTree<Operator>> parseTreeList = new ArrayList<ParseTree<Operator>>();
 		for(File f : sqlFiles) {
 			parseTreeList.add(ParseTreeGenerator.generate(dataDirs, f));
+
+			/* DEBUG */
+			/* Show the unoptimized Query Plan */
+			System.err.println(
+					"Unoptimized:\n\n" +
+					parseTreeList.get(parseTreeList.size()-1).getRoot().getSchema()
+					);
+		}
+		
+		/* Optimize each parse-tree */
+		Iterator<ParseTree<Operator>> i = parseTreeList.iterator();
+		while(i.hasNext()) {
+			ParseTree<Operator> parseTree = i.next();
+			ParseTreeOptimizer.optimize(parseTree);
+			
+			/* DEBUG */
+			/* Show the optimized Query Plan */
+			System.err.println(
+					"Optimized:\n\n" +
+					parseTree.getRoot().getSchema()
+					);
 		}
 		
 		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
-		Iterator<ParseTree<Operator>> i = parseTreeList.iterator();
-		while(i.hasNext()) {
-			ParseTreeEvaluator.evaluate(i.next());
-		}
+//		i = parseTreeList.iterator();
+//		while(i.hasNext()) {
+//			ParseTreeEvaluator.evaluate(i.next());
+//		}
 		
 		/* DEBUG */
 		/* Show query times */
-		System.err.println("GNERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-		System.err.println("QUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		System.err.println("\nGNERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
+		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }
