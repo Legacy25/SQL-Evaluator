@@ -7,6 +7,7 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.operators.CrossProductOperator;
+import edu.buffalo.cse562.operators.ExternalHashJoinOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.SelectionOperator;
 import edu.buffalo.cse562.schema.Schema;
@@ -215,11 +216,20 @@ public class ParseTreeOptimizer {
 
 		if(parseTree instanceof SelectionOperator) {
 			SelectionOperator select = (SelectionOperator) parseTree;
+			
 			if(select.getLeft() != null) {
 				Operator child = select.getLeft();
+				
 				if(child instanceof CrossProductOperator) {
-					System.out.println("Found");
-					/* TODO Pattern Matched, replace it with Join */
+					/* Pattern Matched, replace it with Join */
+					Operator leftChild = child.getLeft();
+					Operator rightChild = child.getRight();
+					
+					parseTree = new ExternalHashJoinOperator(
+							select.getWhere() ,
+							leftChild ,
+							rightChild
+							);
 				}
 			}
 		}

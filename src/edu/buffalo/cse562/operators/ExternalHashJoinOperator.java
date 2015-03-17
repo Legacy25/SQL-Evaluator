@@ -1,13 +1,16 @@
 package edu.buffalo.cse562.operators;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.ColumnWithType;
@@ -53,6 +56,11 @@ public class ExternalHashJoinOperator implements Operator {
 		
 		/* Initializations */
 		index = 0;
+		selectedCols1 = new boolean[child1.getSchema().getColumns().size()];
+		selectedCols2 = new boolean[child2.getSchema().getColumns().size()];
+		
+		Arrays.fill(selectedCols1, false);
+		Arrays.fill(selectedCols2, false);
 		
 		tempList = new ArrayList<LeafValue[]>();
 		JoinCache1 = new HashMap<String,ArrayList<LeafValue[]>>();
@@ -111,24 +119,45 @@ public class ExternalHashJoinOperator implements Operator {
 	}
 	
 	public void getSelectedColumns() {
-		Expression splitAndClauses(Expression e);
-		{
-		  ArrayList<Expression> ret = 
-		     new ArrayList<Expression>();
-		  if(e instanceof AndExpression){
-		    AndExpression a = (AndExpression)e;
-		    ret.addAll(
-		    		ParseTreeOptimizer.splitAndClauses(a.getLeftExpression())
-		    );
-		    ret.addAll(
-		    		ParseTreeOptimizer.splitAndClauses(a.getRightExpression())
-		    );
-		  } else {
-		    ret.add(e);
-		  }
+		
+		ArrayList<Expression> clauseList = new ArrayList<Expression>();
+		
+		if(where instanceof AndExpression) {
+			clauseList.addAll(ParseTreeOptimizer.splitAndClauses(where));
+		}
+		else {
+			clauseList.add(where);
+		}
+		
+		for(Expression clause : clauseList) {
+			BinaryExpression binaryClause = (BinaryExpression) clause;
+			Column left = (Column) binaryClause.getLeftExpression();
+			Column right = (Column) binaryClause.getRightExpression();
+			
+			int pos = findInSchema(left, child1.getSchema());
+			if(pos < 0) {
+				selectedCols2[findInSchema(left, child2.getSchema())] = true;
+				selectedCols1[findInSchema(right, child1.getSchema())] = true;
+			}
+			else {
+				selectedCols1[pos] = true;
+				selectedCols2[findInSchema(right, child2.getSchema())] = true;
+			}
+			
 		}
 	}
 	
+	private int findInSchema(Column col, Schema schema) {
+
+		ArrayList<ColumnWithType> columnList = schema.getColumns();
+		for(int i=0; i<columnList.size(); i++) {
+			if(columnList.get(i).getWholeColumnName().equalsIgnoreCase(col.getWholeColumnName()))
+				return i;
+		}
+		
+		return -1;
+	}
+
 	public void buildHash(){
 		
 		String key1 = "";
@@ -194,13 +223,34 @@ public class ExternalHashJoinOperator implements Operator {
 	
 	public void buildJoin(){
 		
-		Set<String> key = JoinCache1.entrySet();
-		Iterator<String> i = key.iterator();
-		while(i.hasNext()){
-			if(JoinCache1.containKey(Key)){
-				
+		for(String key : JoinCache1.keySet()) {
+			ArrayList<LeafValue[]> leftTuples = JoinCache1.get(key);
+			if(!JoinCache2.containsKey(key)) {
+				continue;
+			}
+			
+			ArrayList<LeafValue[]> rightTuples = JoinCache2.get(key);
+			
+			LeafValue[] toBeAdded = new LeafValue[selectedCols1.length + selectedCols2.length];
+			for(LeafValue[] left : leftTuples) {
+				for(LeafValue[] right : rightTuples) {
+					for(int i=0; i<toBeAdded.length; i++) {
+						if(i < left.length) {
+							toBeAdded[i] = left[i];
+						}
+						else {
+							toBeAdded[i] = right[i - left.length];
+						}
+					}
+					
+					tempList.add(toBeAdded);
+				}
 			}
 		}
+
+		/* Clear the caches, we don't need them anymore */
+		JoinCache1.clear();
+		JoinCache2.clear();
 	}
 	
 	
@@ -211,11 +261,6 @@ public class ExternalHashJoinOperator implements Operator {
 		
 		/* Reset the index */
 		index = 0; 
-		
-		/* Clear the caches */
-		JoinCache1.clear();
-		JoinCache2.clear();
-		
 	}
 	
 	@Override

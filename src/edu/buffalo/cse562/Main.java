@@ -88,10 +88,10 @@ public class Main {
 		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
-//		i = parseTreeList.iterator();
-//		while(i.hasNext()) {
-//			ParseTreeEvaluator.evaluate(i.next());
-//		}
+		i = parseTreeList.iterator();
+		while(i.hasNext()) {
+			ParseTreeEvaluator.evaluate(i.next());
+		}
 		
 		/* DEBUG */
 		/* Show query times */
