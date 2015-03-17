@@ -38,7 +38,7 @@ public class ParseTreeOptimizer {
 		/* Other Patterns go here */
 		
 		/* Generate appropriate table names after optimization */
-		parseTree.generateSchemaName();
+		//parseTree.generateSchemaName();
 		
 	}
 	
