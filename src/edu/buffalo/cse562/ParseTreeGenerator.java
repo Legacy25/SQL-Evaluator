@@ -26,8 +26,6 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
-import edu.buffalo.cse562.datastructures.ParseTree;
-import edu.buffalo.cse562.exceptions.InsertOnNonEmptyBranchException;
 import edu.buffalo.cse562.exceptions.UnsupportedStatementException;
 import edu.buffalo.cse562.operators.DistinctOperator;
 import edu.buffalo.cse562.operators.GroupByAggregateOperator;
@@ -76,9 +74,9 @@ public class ParseTreeGenerator {
 	 * The meat of Checkpoint 1, parses each statement
 	 *  and generates a corresponding parse-tree
 	 */
-	public static ParseTree<Operator> generate(ArrayList<String> dataDirs, File sqlFile) {
+	public static Operator generate(ArrayList<String> dataDirs, File sqlFile) {
 		
-		ParseTree<Operator> parseTree = new ParseTree<Operator>();
+		Operator parseTree = null;
 		Statement statement = null;
 		
 		try {
@@ -159,19 +157,17 @@ public class ParseTreeGenerator {
 						 * Then we iterate over the rest(if any) PlainSelect
 						 * statements, till there are no more to add
 						 */
-						parseTree.insertRoot(
+						parseTree =
 									new UnionOperator(
-											parsePlainSelect((PlainSelect) i.next()).getRoot() , 
-											parsePlainSelect((PlainSelect) i.next()).getRoot()
-									)
+											parsePlainSelect((PlainSelect) i.next()) , 
+											parsePlainSelect((PlainSelect) i.next())
 								);
 						
 						while(i.hasNext()) {
-							parseTree.insertRoot(
+							parseTree =
 										new UnionOperator(
-												parseTree.getRoot() ,		// The union of the first two
-												parsePlainSelect((PlainSelect) i.next()).getRoot()
-										)
+												parseTree ,		// The union of the first two
+												parsePlainSelect((PlainSelect) i.next())
 									);
 						}
 					}
@@ -185,7 +181,7 @@ public class ParseTreeGenerator {
 					return parseTree;
 				}
 			}
-		} catch (FileNotFoundException | ParseException | InsertOnNonEmptyBranchException | UnsupportedStatementException e) {
+		} catch (FileNotFoundException | ParseException | UnsupportedStatementException e) {
 			e.printStackTrace();
 		}
 		
@@ -195,9 +191,10 @@ public class ParseTreeGenerator {
 	
 
 	@SuppressWarnings("unchecked")
-	private static ParseTree<Operator> parsePlainSelect(PlainSelect ps) throws InsertOnNonEmptyBranchException, UnsupportedStatementException {
+	private static Operator parsePlainSelect(PlainSelect ps)
+			throws UnsupportedStatementException {
 		
-		ParseTree<Operator> parseTree = new ParseTree<Operator>();
+		Operator parseTree = null;
 	
 		//==================FROM CLAUSE=================================
 		
@@ -219,7 +216,7 @@ public class ParseTreeGenerator {
 				schema.setTableName(fi.getAlias());
 			}
 			
-			parseTree.insertRoot(new ScanOperator(schema));
+			parseTree = new ScanOperator(schema);
 		}
 		
 		if(fi instanceof SubJoin) {
@@ -228,7 +225,7 @@ public class ParseTreeGenerator {
 		
 		if(fi instanceof SubSelect) {
 			
-			ParseTree<Operator> subSelectTree = new ParseTree<Operator>();
+			Operator subSelectTree;
 			SelectBody body = ((SubSelect) fi).getSelectBody();
 			
 			if(body instanceof PlainSelect) {
@@ -241,20 +238,18 @@ public class ParseTreeGenerator {
 				@SuppressWarnings("rawtypes")
 				Iterator i = union.getPlainSelects().iterator();
 				
-				subSelectTree.insertRoot(
+				subSelectTree =
 						new UnionOperator(
 								parsePlainSelect(
-										(PlainSelect) i.next()).getRoot() , 
-										parsePlainSelect((PlainSelect) i.next()).getRoot()
-										)
+										(PlainSelect) i.next()) , 
+										parsePlainSelect((PlainSelect) i.next())
 						);
 				
 				while(i.hasNext()) {
-					subSelectTree.insertRoot(
+					subSelectTree =
 							new UnionOperator(
-									subSelectTree.getRoot() ,
-									parsePlainSelect((PlainSelect) i.next()).getRoot()
-									)
+									subSelectTree ,
+									parsePlainSelect((PlainSelect) i.next())
 							);
 				}
 			}
@@ -267,10 +262,8 @@ public class ParseTreeGenerator {
 				throw new UnsupportedStatementException();
 			}
 			
-			subSelectTree.getRoot().getSchema().setTableName(fi.getAlias());
-			parseTree.insertRoot(
-					subSelectTree.getRoot()
-					);
+			subSelectTree.getSchema().setTableName(fi.getAlias());
+			parseTree = subSelectTree;
 			
 		}
 		
@@ -285,32 +278,22 @@ public class ParseTreeGenerator {
 			while(i.hasNext()) {
 				Join join = (Join) i.next();
 				
-				ParseTree<Operator> right = new ParseTree<Operator>(
+				Operator right = 
 						new ScanOperator(
-								findSchema(
-										join.getRightItem().toString()
-										)
-								)
+								findSchema(join.getRightItem().toString())
 						);
 				
-				parseTree.insertRoot(
+				parseTree =
 						new CrossProductOperator(
-								parseTree.getLeft().getRoot(),
-								right.getRoot()
-								)
-						);
-				
-				parseTree.insertBranch(
-						right ,
-						ParseTree.Side.RIGHT
+								parseTree ,
+								right
 						);
 				
 				if(join.getOnExpression() != null) {
-					parseTree.insertRoot(
+					parseTree =
 							new SelectionOperator(
 									join.getOnExpression() ,
-									parseTree.getLeft().getRoot()
-									)
+									parseTree.getLeft()
 							);										
 				}
 			}
@@ -322,11 +305,10 @@ public class ParseTreeGenerator {
 		//======================SELECTION=====================================
 		
 		if(ps.getWhere() != null) {
-			parseTree.insertRoot(
+			parseTree =
 					new SelectionOperator(
 							ps.getWhere() ,
-							parseTree.getLeft().getRoot()
-							)
+							parseTree
 					);
 		
 		}						
@@ -381,12 +363,11 @@ public class ParseTreeGenerator {
 			}
 			
 			if(parseTree.getLeft() != null)
-				parseTree.insertRoot(
+				parseTree = 
 						new GroupByAggregateOperator(
 								selectedColumns ,
 								ps.getSelectItems() ,
-								parseTree.getLeft().getRoot()
-								)
+								parseTree
 						);
 			
 		}
@@ -396,11 +377,10 @@ public class ParseTreeGenerator {
 		//=======================HAVING========================================
 		
 		if(ps.getHaving() != null) {
-			parseTree.insertRoot(
+			parseTree = 
 					new SelectionOperator(
 							ps.getHaving() ,
-							parseTree.getLeft().getRoot()
-							)
+							parseTree
 					);
 
 		}
@@ -414,11 +394,10 @@ public class ParseTreeGenerator {
 		 */
 		if(!aggregateQuery && ps.getSelectItems() != null) {
 			if(!(ps.getSelectItems().get(0) instanceof AllColumns)) {
-				parseTree.insertRoot(
+				parseTree = 
 						new ProjectionOperator(
 								ps.getSelectItems() ,
-								parseTree.getLeft().getRoot()
-								)
+								parseTree
 						);
 			}
 		}
@@ -446,12 +425,11 @@ public class ParseTreeGenerator {
 			 * OrderBy Operators in a LIFO fashion
 			 */
 			for(int i1=obe.size()-1; i1>=0; i1--) {
-				parseTree.insertRoot(
+				parseTree =
 						new OrderByOperator(
 								obe.get(i1).getExpression() ,
 								obe.get(i1).isAsc() ,
-								parseTree.getLeft().getRoot()
-								)
+								parseTree
 						);
 			}
 
@@ -464,10 +442,9 @@ public class ParseTreeGenerator {
 		//=========================DISTINCT=====================================
 		
 		if(ps.getDistinct() != null) {
-			parseTree.insertRoot(
+			parseTree = 
 					new DistinctOperator(
-							parseTree.getLeft().getRoot()
-							)
+							parseTree
 					);
 		}
 		
@@ -475,11 +452,10 @@ public class ParseTreeGenerator {
 		//=======================LIMIT==========================================
 		
 		if(ps.getLimit() != null) {
-			parseTree.insertRoot(
+			parseTree =
 					new LimitOperator(
 							ps.getLimit().getRowCount() ,
-							parseTree.getLeft().getRoot()
-							)
+							parseTree
 					);
 		}
 		

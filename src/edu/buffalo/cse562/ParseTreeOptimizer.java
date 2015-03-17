@@ -4,20 +4,19 @@ import java.util.ArrayList;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
-import edu.buffalo.cse562.datastructures.ParseTree;
 import edu.buffalo.cse562.operators.CrossProductOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.SelectionOperator;
 
 public class ParseTreeOptimizer {
 
-	public static void optimize(ParseTree<Operator> parseTree) {
+	public static void optimize(Operator parseTree) {
 		/*
 		 * Query plan rewrites for faster evaluation
 		 */
 		
 		/* Replace Selection over Cross Product with appropriate Join */
-		findJoinPatternAndReplace(parseTree.getRoot());
+		findJoinPatternAndReplace(parseTree);
 		
 		/* Other Patterns go here */
 		

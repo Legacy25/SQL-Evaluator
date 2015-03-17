@@ -13,7 +13,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import edu.buffalo.cse562.datastructures.ParseTree;
 import edu.buffalo.cse562.operators.Operator;
 
 public class Main {	
@@ -60,7 +59,7 @@ public class Main {
 		long start = System.nanoTime();
 		
 		/* The generated list of parse-trees, one for each query */
-		ArrayList<ParseTree<Operator>> parseTreeList = new ArrayList<ParseTree<Operator>>();
+		ArrayList<Operator> parseTreeList = new ArrayList<Operator>();
 		for(File f : sqlFiles) {
 			parseTreeList.add(ParseTreeGenerator.generate(dataDirs, f));
 
@@ -68,21 +67,21 @@ public class Main {
 			/* Show the unoptimized Query Plan */
 			System.err.println(
 					"Unoptimized:\n\n" +
-					parseTreeList.get(parseTreeList.size()-1).getRoot().getSchema()
+					parseTreeList.get(parseTreeList.size()-1).getSchema()
 					);
 		}
 		
 		/* Optimize each parse-tree */
-		Iterator<ParseTree<Operator>> i = parseTreeList.iterator();
+		Iterator<Operator> i = parseTreeList.iterator();
 		while(i.hasNext()) {
-			ParseTree<Operator> parseTree = i.next();
+			Operator parseTree = i.next();
 			ParseTreeOptimizer.optimize(parseTree);
 			
 			/* DEBUG */
 			/* Show the optimized Query Plan */
 			System.err.println(
 					"Optimized:\n\n" +
-					parseTree.getRoot().getSchema()
+					parseTree.getSchema()
 					);
 		}
 		

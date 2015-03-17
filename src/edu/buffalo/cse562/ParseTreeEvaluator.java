@@ -2,7 +2,6 @@ package edu.buffalo.cse562;
 
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.StringValue;
-import edu.buffalo.cse562.datastructures.ParseTree;
 import edu.buffalo.cse562.operators.Operator;
 
 public class ParseTreeEvaluator {
@@ -10,20 +9,19 @@ public class ParseTreeEvaluator {
 	/*
 	 * Evaluates a parse-tree
 	 */
-	public static void evaluate(ParseTree<Operator> parseTree) {
+	public static void evaluate(Operator parseTree) {
 
-		if(parseTree == null || parseTree.getRoot() == null) {
+		if(parseTree == null || parseTree == null) {
 			/* Covering our bases in case of faulty logic */
 			System.err.println("Cannot evaluate empty parse-tree");
 			return;
 		}
 		
-		Operator op = parseTree.getRoot();
-		op.initialize();
+		parseTree.initialize();
 		
 		LeafValue res[];
 		/* Keep getting a tuple and displaying it till we exhaust the root operator */
-		while((res = op.readOneTuple()) != null) {
+		while((res = parseTree.readOneTuple()) != null) {
 			display(res);
 		}
 	}
