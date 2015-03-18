@@ -66,7 +66,7 @@ public class OrderByOperator implements Operator {
 
 	public void generateSchemaName() {
 		child.generateSchemaName();
-		schema.setTableName("L(" + child.getSchema().getTableName() + ")");
+		schema.setTableName("O(" + child.getSchema().getTableName() + ")");
 	}
 	
 	/*
@@ -136,7 +136,7 @@ public class OrderByOperator implements Operator {
 			tempList.add(next);
 			next = child.readOneTuple();
 		}
-		
+				
 		/* Sort tempList using the sorting routine */
 		Collections.sort(tempList, new Comparator<LeafValue[]>() {
 
