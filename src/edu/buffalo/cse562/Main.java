@@ -9,14 +9,9 @@
 
 package edu.buffalo.cse562;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Iterator;
-
-import com.sun.xml.internal.stream.util.BufferAllocator;
 
 import edu.buffalo.cse562.operators.Operator;
 
@@ -66,7 +61,7 @@ public class Main {
 		 * This code should be commented out before
 		 * commits for submissions.
 		 */
-		long start = System.nanoTime();
+//		long start = System.nanoTime();
 		
 		/* The generated list of parse-trees, one for each query */
 		ArrayList<Operator> parseTreeList = new ArrayList<Operator>();
@@ -95,7 +90,7 @@ public class Main {
 //					);
 		}
 		
-		long generateTime = System.nanoTime();
+//		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		i = parseTreeList.iterator();
