@@ -1,6 +1,8 @@
 package edu.buffalo.cse562.operators;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import edu.buffalo.cse562.schema.Schema;
 import net.sf.jsqlparser.expression.DateValue;
@@ -136,33 +138,13 @@ public class OrderByOperator implements Operator {
 		}
 		
 		/* Sort tempList using the sorting routine */
-		tempList = sortingRoutine(tempList);
-		
-		/* 
-		 * Reset the child since we read it
-		 * This preserves the semantics of the Operator interface
-		 */
-		child.reset();
-	
-	}
-	
-	private ArrayList<LeafValue[]> sortingRoutine(ArrayList<LeafValue[]> tempList) {
-		/* 
-		 * The sorting routine is decoupled from the sort function
-		 * to provide flexibility between different sort
-		 * algorithms
-		 * 
-		 * Presently we are using insertion sort, but QuickSort or MergeSort
-		 * will obviously provide much better results, this is one easy optimization
-		 * for the vanilla in-memory order by operator
-		 */
-		for(int i=1; i<tempList.size(); i++) {
-			int j = i;
-			boolean condition = false;
-			
-			do {
-				String type = null;
-				LeafValue element = tempList.get(0)[column];
+		Collections.sort(tempList, new Comparator<LeafValue[]>() {
+
+			@Override
+			public int compare(LeafValue[] o1, LeafValue[] o2) {
+				String type = "";
+				Boolean condition = false;
+				LeafValue element = o1[column];
 				
 				if(element instanceof LongValue) {
 					type = "int";
@@ -181,11 +163,13 @@ public class OrderByOperator implements Operator {
 				case "int":
 				case "decimal":
 					try {
+						if(o1[column].toDouble() == o2[column].toDouble())
+							return 0;
 						if(isAsc) {
-							condition = tempList.get(j-1)[column].toDouble() > tempList.get(j)[column].toDouble();
+							condition = o1[column].toDouble() > o2[column].toDouble();
 						}
 						else {
-							condition = tempList.get(j-1)[column].toDouble() < tempList.get(j)[column].toDouble();
+							condition = o1[column].toDouble() < o2[column].toDouble();
 						}
 					} catch (InvalidLeaf e) {
 						
@@ -193,34 +177,37 @@ public class OrderByOperator implements Operator {
 					break;
 				case "string":
 				case "date":
+					if(o1[column].toString().equalsIgnoreCase(o2[column].toString()))
+						return 0;
 					if(isAsc) {
-						condition = tempList.get(j-1)[column].toString().compareToIgnoreCase
-										(tempList.get(j)[column].toString()) > 0;
+						condition = o1[column].toString().compareToIgnoreCase
+										(o2[column].toString()) > 0;
 					}
 					else {
-						condition = tempList.get(j-1)[column].toString().compareToIgnoreCase
-										(tempList.get(j)[column].toString()) < 0;
+						condition = o1[column].toString().compareToIgnoreCase
+										(o2[column].toString()) < 0;
 					}
 					break;
 					
 				
 				}
 				
+				if(condition)
+					return 1;
+				else
+					return -1;
+			}
 			
-				if(condition) {
-					LeafValue[] temp = tempList.get(j);
-					tempList.set(j, tempList.get(j-1));
-					tempList.set(j-1, temp);
-					
-				}
-				
-				j--;
-			} while(j > 0 && condition);
-		}
+		});
 		
-		return tempList;
+		/* 
+		 * Reset the child since we read it
+		 * This preserves the semantics of the Operator interface
+		 */
+		child.reset();
+	
 	}
-
+	
 	@Override
 	public Operator getLeft() {
 		return child;
