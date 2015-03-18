@@ -11,9 +11,7 @@ public class ParseTreeEvaluator {
 	 */
 	public static void evaluate(Operator parseTree) {
 
-		if(parseTree == null || parseTree == null) {
-			/* Covering our bases in case of faulty logic */
-			System.err.println("Cannot evaluate empty parse-tree");
+		if(parseTree == null) {
 			return;
 		}
 		
