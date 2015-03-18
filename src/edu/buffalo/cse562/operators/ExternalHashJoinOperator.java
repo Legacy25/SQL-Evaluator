@@ -33,13 +33,11 @@ public class ExternalHashJoinOperator implements Operator {
 	private Expression where;				/* The join clause */
 	private Operator child1, child2;		/* The two relations to cross product */
 	
-	
-	private int index;						/* Index into tempList */
+	private int joinedLength;
 	private ArrayList<LeafValue[]> tempList;		/* Temporary list that holds the joined tuples */
 	
 	/* Hashes for the children's keys */
-	private HashMap<String, ArrayList<LeafValue []>> JoinCache1;
-	private HashMap<String, ArrayList<LeafValue []>> JoinCache2;
+	private HashMap<String, ArrayList<LeafValue []>> hash;
 	
 	/* Boolean array that contains selected columns for both relations */
 	private boolean[] selectedCols1;
@@ -52,16 +50,15 @@ public class ExternalHashJoinOperator implements Operator {
 		this.child2 = child2;
 		
 		/* Initializations */
-		index = 0;
 		selectedCols1 = new boolean[child1.getSchema().getColumns().size()];
 		selectedCols2 = new boolean[child2.getSchema().getColumns().size()];
+		joinedLength = selectedCols1.length + selectedCols2.length;
 		
 		Arrays.fill(selectedCols1, false);
 		Arrays.fill(selectedCols2, false);
 		
 		tempList = new ArrayList<LeafValue[]>();
-		JoinCache1 = new HashMap<String,ArrayList<LeafValue[]>>();
-		JoinCache2 = new HashMap<String,ArrayList<LeafValue[]>>();
+		hash = new HashMap<String, ArrayList<LeafValue[]>>(10000, (float) 0.5);
 		
 		buildSchema();
 	}
@@ -110,7 +107,7 @@ public class ExternalHashJoinOperator implements Operator {
 		
 		/* Build the hash on both tables */
 		buildHash();
-		
+
 		/* Generate the temporary list of joined tuples */
 		buildJoin();
 	}
@@ -157,98 +154,83 @@ public class ExternalHashJoinOperator implements Operator {
 
 	public void buildHash(){
 		
-		String key = "";
 		LeafValue[] next;
 
 		child1.initialize();
 		
 		while((next = child1.readOneTuple()) != null) {
+			String key = "";
 			for(int i=0; i<selectedCols1.length; i++) {
 				if(selectedCols1[i])
 					key += next[i].toString();
 			}
 			
-			if(!JoinCache1.containsKey(key)) {
+			if(!hash.containsKey(key)) {
 				ArrayList<LeafValue[]> toBeAdded = new ArrayList<LeafValue[]>();
-				JoinCache1.put(key, toBeAdded);
+				toBeAdded.add(next);
+				hash.put(key, toBeAdded);
+				continue;
 			}
 
-			JoinCache1.get(key).add(next);
-			key = "";
+			hash.get(key).add(next);
 		}
 
 		child1.reset();
-
-		
-		child2.initialize();
-		
-		while((next = child2.readOneTuple()) != null) {
-			for(int i=0; i<selectedCols2.length; i++) {
-				if(selectedCols2[i])
-					key += next[i].toString();
-			}
-			
-			if(!JoinCache2.containsKey(key)) {
-				ArrayList<LeafValue[]> toBeAdded = new ArrayList<LeafValue[]>();
-				JoinCache2.put(key, toBeAdded);
-			}
-
-			JoinCache2.get(key).add(next);
-			key = "";
-		}
-		
-		child2.reset();
 		
 	}
 	
 	@Override
 	public LeafValue[] readOneTuple() {
-		if(index >= tempList.size()) {
-			/* If index reaches size limit, return null,
+		if(tempList.isEmpty()) {
+			/* 
 			 * no more tuples to return
 			 */
 			return null; 
 		}
 		
 		/* Temporary return tuple */
-		LeafValue[] next = tempList.get(index);
+		LeafValue[] next = tempList.get(0);
 		
-		/* Increment the index */
-		index++;
+		/* Remove tuple from tempList */
+		tempList.remove(0);
 		
 		return next;
 	}
 	
 	public void buildJoin(){
 		
-		for(String key : JoinCache1.keySet()) {
-			ArrayList<LeafValue[]> leftTuples = JoinCache1.get(key);
-			if(!JoinCache2.containsKey(key)) {
+		LeafValue[] next = null;
+		
+		while((next = child2.readOneTuple()) != null) {
+			String key = "";
+			for(int i=0; i<selectedCols2.length; i++) {
+				if(selectedCols2[i])
+					key += next[i].toString();
+			}
+			
+			ArrayList<LeafValue[]> matchedTuples = hash.get(key);
+			
+			if(matchedTuples == null) {
 				continue;
 			}
 			
-			ArrayList<LeafValue[]> rightTuples = JoinCache2.get(key);
-			
-			for(LeafValue[] left : leftTuples) {
-				for(LeafValue[] right : rightTuples) {
-					LeafValue[] toBeAdded = new LeafValue[selectedCols1.length + selectedCols2.length];
-					for(int i=0; i<toBeAdded.length; i++) {
-						if(i < left.length) {
-							toBeAdded[i] = left[i];
-						}
-						else {
-							toBeAdded[i] = right[i - left.length];
-						}
+			for(LeafValue[] left : matchedTuples) {
+				LeafValue[] joinedTuple = new LeafValue[joinedLength];
+				for(int i=0; i<joinedLength; i++) {
+					if(i < selectedCols1.length) {
+						joinedTuple[i] = left[i];
 					}
-					
-					tempList.add(toBeAdded);
+					else {
+						joinedTuple[i] = next[i - selectedCols1.length];
+					}
 				}
+				tempList.add(joinedTuple);
 			}
+			
 		}
 
 		/* Clear the caches, we don't need them anymore */
-		JoinCache1.clear();
-		JoinCache2.clear();
+		hash.clear();
 	}
 	
 	
@@ -257,8 +239,7 @@ public class ExternalHashJoinOperator implements Operator {
 		child1.reset();
 		child2.reset();
 		
-		/* Reset the index */
-		index = 0; 
+		tempList.clear();
 	}
 	
 	@Override

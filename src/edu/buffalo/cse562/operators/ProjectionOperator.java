@@ -168,6 +168,7 @@ public class ProjectionOperator extends Eval implements Operator {
 	@Override
 	public void generateSchemaName() {
 		child.generateSchemaName();
+		childSchema = child.getSchema();
 		schema.setTableName("\u03C0(" + childSchema.getTableName() + ")");
 	}
 	

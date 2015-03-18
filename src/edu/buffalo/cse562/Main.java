@@ -9,9 +9,14 @@
 
 package edu.buffalo.cse562;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import com.sun.xml.internal.stream.util.BufferAllocator;
 
 import edu.buffalo.cse562.operators.Operator;
 
@@ -24,6 +29,14 @@ public class Main {
 	public static File swapDirectory;
 	
 	public static void main(String[] args) {
+		
+//		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+//		try {
+//			System.out.println("Press enter to continue...");
+//			br.readLine();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 
 		/* Stores the data directories */
 		ArrayList<String> dataDirs = new ArrayList<String>();
@@ -48,15 +61,12 @@ public class Main {
 			}
 		}
 		
-		/* DEBUG */
-//		System.err.println("Swap Directory: " + swapDirectory);
-		
 		/* 
 		 * Keep track of query time locally.
 		 * This code should be commented out before
 		 * commits for submissions.
 		 */
-//		long start = System.nanoTime();
+		long start = System.nanoTime();
 		
 		/* The generated list of parse-trees, one for each query */
 		ArrayList<Operator> parseTreeList = new ArrayList<Operator>();
@@ -85,7 +95,7 @@ public class Main {
 //					);
 		}
 		
-//		long generateTime = System.nanoTime();
+		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		i = parseTreeList.iterator();
@@ -95,7 +105,7 @@ public class Main {
 		
 		/* DEBUG */
 		/* Show query times */
-//		System.err.println("\nGNERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
+//		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
 //		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
