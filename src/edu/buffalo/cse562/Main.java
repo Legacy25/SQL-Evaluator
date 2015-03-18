@@ -56,7 +56,7 @@ public class Main {
 		 * This code should be commented out before
 		 * commits for submissions.
 		 */
-		long start = System.nanoTime();
+//		long start = System.nanoTime();
 		
 		/* The generated list of parse-trees, one for each query */
 		ArrayList<Operator> parseTreeList = new ArrayList<Operator>();
@@ -85,7 +85,7 @@ public class Main {
 //					);
 		}
 		
-		long generateTime = System.nanoTime();
+//		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		i = parseTreeList.iterator();

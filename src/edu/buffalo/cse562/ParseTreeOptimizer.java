@@ -15,7 +15,7 @@ import edu.buffalo.cse562.schema.Schema;
 public class ParseTreeOptimizer {
 
 	private enum ClauseApplicability {
-		ROOT, LEFT, RIGHT;
+		ROOT, LEFT, RIGHT, INVALID;
 	}
 	
 	/* 
@@ -38,7 +38,7 @@ public class ParseTreeOptimizer {
 		/* Other Patterns go here */
 		
 		/* Generate appropriate table names after optimization */
-		//parseTree.generateSchemaName();
+		parseTree.generateSchemaName();
 		
 	}
 	
@@ -76,10 +76,8 @@ public class ParseTreeOptimizer {
 						) {
 					/* 
 					 * If the two do not agree, the only option can be root,
-					 * which is there by default, we set ret to null
-					 * to avoid returning before we reach the default 
 					 */
-					ret = null;
+					return ClauseApplicability.ROOT;
 				}
 			}			
 
@@ -93,12 +91,8 @@ public class ParseTreeOptimizer {
 				return ret;
 		}
 		
-		/* 
-		 * Default option, the clause stays where it is, 
-		 * either we do not know enough about it to reorder it,
-		 * or they do not agree on which side they fall on
-		 */
-		return ClauseApplicability.ROOT;
+		return ClauseApplicability.INVALID;
+		
 	}
 	
 	private static ClauseApplicability 
@@ -138,6 +132,7 @@ public class ParseTreeOptimizer {
 				ArrayList<Expression> parentList = new ArrayList<Expression>();
 				ArrayList<Expression> leftList = new ArrayList<Expression>();
 				ArrayList<Expression> rightList = new ArrayList<Expression>();
+				ArrayList<Expression> invalidList = new ArrayList<Expression>();
 				
 				for(Expression clause : clauseList) {
 					ClauseApplicability ca = checkClauseApplicability(
@@ -156,7 +151,21 @@ public class ParseTreeOptimizer {
 					case RIGHT:
 						rightList.add(clause);
 						break;
+					case INVALID:
+						invalidList.add(clause);
+						break;
 					}
+				}
+
+				
+				if(!leftList.isEmpty()) {
+					Expression where = mergeClauses(leftList);
+					crossProduct.setLeft(new SelectionOperator(where, crossProductLeftChild));
+				}
+				
+				if(!rightList.isEmpty()) {
+					Expression where = mergeClauses(rightList);
+					crossProduct.setRight(new SelectionOperator(where, crossProductRightChild));
 				}
 				
 				if(!parentList.isEmpty()) {
@@ -167,14 +176,9 @@ public class ParseTreeOptimizer {
 					parseTree = crossProduct;
 				}
 				
-				if(!leftList.isEmpty()) {
-					Expression where = mergeClauses(leftList);
-					crossProduct.setLeft(new SelectionOperator(where, crossProductLeftChild));
-				}
-				
-				if(!rightList.isEmpty()) {
-					Expression where = mergeClauses(rightList);
-					crossProduct.setRight(new SelectionOperator(where, crossProductRightChild));
+				if(!invalidList.isEmpty()) {
+					Expression where = mergeClauses(invalidList);
+					parseTree = new SelectionOperator(where, parseTree);
 				}
 			}
 		}

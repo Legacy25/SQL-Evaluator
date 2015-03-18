@@ -3,8 +3,6 @@ package edu.buffalo.cse562.operators;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -12,7 +10,6 @@ import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.ParseTreeOptimizer;
-import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
@@ -130,7 +127,6 @@ public class ExternalHashJoinOperator implements Operator {
 		}
 		
 		for(Expression clause : clauseList) {
-			System.out.println(where);
 			BinaryExpression binaryClause = (BinaryExpression) clause;
 			Column left = (Column) binaryClause.getLeftExpression();
 			Column right = (Column) binaryClause.getRightExpression();
@@ -161,46 +157,47 @@ public class ExternalHashJoinOperator implements Operator {
 
 	public void buildHash(){
 		
-		String key1 = "";
-		String key2 = "";
-		
+		String key = "";
+		LeafValue[] next;
+
 		child1.initialize();
-		child2.initialize();
 		
-		LeafValue[] next1, next2;
-		
-		while((next1 = child1.readOneTuple()) != null) {
-			while((next2 = child2.readOneTuple()) != null) {
-				for(int i=0; i<selectedCols1.length; i++) {
-					key1 += next1[i].toString();
-				}
-				for(int i=0; i<selectedCols2.length; i++) {
-					key2 += next2[i].toString();
-				}
-				
-				if(JoinCache1.containsKey(key1)) {
-					JoinCache1.get(key1).add(next1);
-				}
-				else {
-					ArrayList<LeafValue[]> toBeAdded = new ArrayList<LeafValue[]>();
-					toBeAdded.add(next1);
-					JoinCache1.put(key1, toBeAdded);
-				}
-				
-				if(JoinCache2.containsKey(key2)) {
-					JoinCache1.get(key2).add(next2);
-				}
-				else {
-					ArrayList<LeafValue[]> toBeAdded = new ArrayList<LeafValue[]>();
-					toBeAdded.add(next2);
-					JoinCache1.put(key2, toBeAdded);
-				}
+		while((next = child1.readOneTuple()) != null) {
+			for(int i=0; i<selectedCols1.length; i++) {
+				if(selectedCols1[i])
+					key += next[i].toString();
 			}
 			
-			child2.reset();
+			if(!JoinCache1.containsKey(key)) {
+				ArrayList<LeafValue[]> toBeAdded = new ArrayList<LeafValue[]>();
+				JoinCache1.put(key, toBeAdded);
+			}
+
+			JoinCache1.get(key).add(next);
+			key = "";
+		}
+
+		child1.reset();
+
+		
+		child2.initialize();
+		
+		while((next = child2.readOneTuple()) != null) {
+			for(int i=0; i<selectedCols2.length; i++) {
+				if(selectedCols2[i])
+					key += next[i].toString();
+			}
+			
+			if(!JoinCache2.containsKey(key)) {
+				ArrayList<LeafValue[]> toBeAdded = new ArrayList<LeafValue[]>();
+				JoinCache2.put(key, toBeAdded);
+			}
+
+			JoinCache2.get(key).add(next);
+			key = "";
 		}
 		
-		child1.reset();
+		child2.reset();
 		
 	}
 	
@@ -232,9 +229,9 @@ public class ExternalHashJoinOperator implements Operator {
 			
 			ArrayList<LeafValue[]> rightTuples = JoinCache2.get(key);
 			
-			LeafValue[] toBeAdded = new LeafValue[selectedCols1.length + selectedCols2.length];
 			for(LeafValue[] left : leftTuples) {
 				for(LeafValue[] right : rightTuples) {
+					LeafValue[] toBeAdded = new LeafValue[selectedCols1.length + selectedCols2.length];
 					for(int i=0; i<toBeAdded.length; i++) {
 						if(i < left.length) {
 							toBeAdded[i] = left[i];
