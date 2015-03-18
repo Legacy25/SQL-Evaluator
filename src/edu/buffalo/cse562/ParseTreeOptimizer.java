@@ -25,6 +25,11 @@ public class ParseTreeOptimizer {
 	 * the query plan
 	 */
 	public static void optimize(Operator parseTree) {
+		
+		if(parseTree == null) {
+			return;
+		}
+		
 		/*
 		 * Query plan rewrites for faster evaluation
 		 */
@@ -38,7 +43,7 @@ public class ParseTreeOptimizer {
 		/* Other Patterns go here */
 		
 		/* Generate appropriate table names after optimization */
-		//parseTree.generateSchemaName();
+		parseTree.generateSchemaName();
 		
 	}
 	
