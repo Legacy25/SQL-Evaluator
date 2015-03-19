@@ -1,6 +1,7 @@
 package edu.buffalo.cse562;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -234,11 +235,54 @@ public class ParseTreeOptimizer {
 					Operator leftChild = child.getLeft();
 					Operator rightChild = child.getRight();
 					
-					parseTree = new ExternalHashJoinOperator(
-							select.getWhere() ,
-							leftChild ,
-							rightChild
+					Expression where = select.getWhere();
+
+					ArrayList<Expression> joinPredicates = new ArrayList<Expression>();
+					ArrayList<Expression> clauseList = new ArrayList<Expression>();
+					
+					if(where instanceof AndExpression) {
+						clauseList = splitAndClauses(where);
+						
+						for(int i=0; i<clauseList.size(); i++) {
+							Expression clause = clauseList.get(i);
+							if(isJoinPredicate(clause)
+									//&& consistent(clause, joinPredicates)
+									) {
+								joinPredicates.add(clause);
+								clauseList.remove(clause);
+							}
+						}
+					}
+					else {
+						joinPredicates.add(where);
+					}
+					
+					/* Pretty sure that joinPredicates will have at least
+					 * one member, but we still check for it
+					 */
+					
+					if(!clauseList.isEmpty()) {
+						parseTree = new SelectionOperator(
+								mergeClauses(clauseList),
+								parseTree
+								);
+						if(!joinPredicates.isEmpty()) {
+							parseTree.setLeft(new ExternalHashJoinOperator(
+								mergeClauses(joinPredicates) ,
+								leftChild ,
+								rightChild
+								)
 							);
+						}
+					} 
+					else if(!joinPredicates.isEmpty()) {
+						parseTree = new ExternalHashJoinOperator(
+								mergeClauses(joinPredicates) ,
+								leftChild ,
+								rightChild
+								);
+					}
+					
 				}
 			}
 		}
@@ -254,6 +298,38 @@ public class ParseTreeOptimizer {
 	
 	
 	
+	private static boolean consistent(Expression clause,
+			ArrayList<Expression> joinPredicates) {
+
+		if(joinPredicates.isEmpty())
+			return true;
+		
+		HashSet<String> joinTables = new HashSet<String>();
+		BinaryExpression firstPredicate = (BinaryExpression) joinPredicates.get(0);
+		BinaryExpression bClause = (BinaryExpression) clause;
+		
+		joinTables.add(((Column) firstPredicate.getLeftExpression()).getTable().getWholeTableName());
+		joinTables.add(((Column) firstPredicate.getRightExpression()).getTable().getWholeTableName());
+		
+		if(joinTables.contains(((Column) bClause.getLeftExpression()).getTable().getWholeTableName())
+				&&
+				joinTables.contains(((Column) bClause.getRightExpression()).getTable().getWholeTableName())
+				)
+			return true;
+		
+		return false;
+	}
+
+	private static boolean isJoinPredicate(Expression clause) {
+
+		if(clause instanceof BinaryExpression) {
+			if(clause.toString().contains("="))
+				return true;
+		}
+		
+		return false;
+	}
+
 	public static ArrayList<Expression> splitAndClauses(Expression e) {
 	  
 		ArrayList<Expression> ret = new ArrayList<Expression>();
