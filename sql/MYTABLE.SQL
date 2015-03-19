@@ -45,7 +45,7 @@ CREATE TABLE SUPPLIER (
         phone        CHAR(15),
         acctbal      DECIMAL,
         comment      VARCHAR(101)
-    )
+    );
 CREATE TABLE NATION (
         nationkey    INT,
         name         CHAR(25),
@@ -62,9 +62,10 @@ SELECT
 	nation.name,
 	sum(lineitem.extendedprice * (1 - lineitem.discount)) as revenue
 FROM
-	nation,
+	region,
 	supplier,
 	customer,
+	nation,
 	orders,
 	lineitem
 WHERE
@@ -73,6 +74,8 @@ WHERE
 	and lineitem.suppkey = supplier.suppkey
 	and customer.nationkey = supplier.nationkey
 	and supplier.nationkey = nation.nationkey
+	and nation.regionkey = region.regionkey
+	and region.name = 'ASIA'
 	and orders.orderdate >= DATE('1994-01-01')
 	and orders.orderdate < DATE('1995-01-01')
 GROUP BY nation.name

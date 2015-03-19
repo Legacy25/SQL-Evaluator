@@ -49,20 +49,23 @@ public class ExternalHashJoinOperator implements Operator {
 		this.child1 = child1;
 		this.child2 = child2;
 		
-		/* Initializations */
-		selectedCols1 = new boolean[child1.getSchema().getColumns().size()];
-		selectedCols2 = new boolean[child2.getSchema().getColumns().size()];
-		joinedLength = selectedCols1.length + selectedCols2.length;
-		
-		Arrays.fill(selectedCols1, false);
-		Arrays.fill(selectedCols2, false);
-		
 		tempList = new ArrayList<LeafValue[]>();
 		hash = new HashMap<String, ArrayList<LeafValue[]>>(10000, (float) 0.5);
 		
 		buildSchema();
 	}
 		
+	public ExternalHashJoinOperator(Expression where, ExternalHashJoinOperator operator) {
+		this.where =  new AndExpression(this.where, where);
+		this.child1 = operator.child1;
+		this.child2 = operator.child2;
+		
+		tempList = new ArrayList<LeafValue[]>();
+		hash = new HashMap<String, ArrayList<LeafValue[]>>(10000, (float) 0.5);
+		
+		this.schema = operator.getSchema();
+	}
+
 	private void buildSchema() {
 		
 		schema = new Schema();
@@ -85,7 +88,8 @@ public class ExternalHashJoinOperator implements Operator {
 		
 		schema.setTableName(
 				child1.getSchema().getTableName() +
-				" \u2A1D " +
+				" \u2A1D" +
+				" {" + where + "} " +
 				child2.getSchema().getTableName()
 				);
 		
@@ -101,6 +105,15 @@ public class ExternalHashJoinOperator implements Operator {
 		/* First initialize the children */
 		child1.initialize();
 		child2.initialize();
+
+		
+		/* Initializations */
+		selectedCols1 = new boolean[child1.getSchema().getColumns().size()];
+		selectedCols2 = new boolean[child2.getSchema().getColumns().size()];
+		joinedLength = selectedCols1.length + selectedCols2.length;
+		
+		Arrays.fill(selectedCols1, false);
+		Arrays.fill(selectedCols2, false);
 		
 		/* Get the columns on which to build the key */
 		getSelectedColumns();

@@ -78,7 +78,7 @@ public class SelectionOperator extends Eval implements Operator {
 
 	public void generateSchemaName() {
 		child.generateSchemaName();
-		schema.setTableName("\u03C3(" + child.getSchema().getTableName() + ")");
+		schema.setTableName("\u03C3 {" + where + "}(" + child.getSchema().getTableName() + ")");
 	}
 	
 	@Override
@@ -211,6 +211,10 @@ public class SelectionOperator extends Eval implements Operator {
 	@Override
 	public Operator getRight() {
 		return null;
+	}
+	
+	public void setWhere(Expression where) {
+		this.where = where;
 	}
 	
 	public Expression getWhere() {

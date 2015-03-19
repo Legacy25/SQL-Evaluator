@@ -45,7 +45,7 @@ CREATE TABLE SUPPLIER (
         phone        CHAR(15),
         acctbal      DECIMAL,
         comment      VARCHAR(101)
-    )
+    );
 CREATE TABLE NATION (
         nationkey    INT,
         name         CHAR(25),
