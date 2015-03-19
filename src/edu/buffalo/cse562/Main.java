@@ -84,24 +84,24 @@ public class Main {
 			
 			/* DEBUG */
 			/* Show the optimized Query Plan */
-			System.err.println(
-					"Optimized:\n\n" +
-					parseTree.getSchema()
-					);
+//			System.err.println(
+//					"Optimized:\n\n" +
+//					parseTree.getSchema()
+//					);
 		}
 		
-		long generateTime = System.nanoTime();
+//		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
-//		i = parseTreeList.iterator();
-//		while(i.hasNext()) {
-//			ParseTreeEvaluator.evaluate(i.next());
-//		}
+		i = parseTreeList.iterator();
+		while(i.hasNext()) {
+			ParseTreeEvaluator.evaluate(i.next());
+		}
 		
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+//		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

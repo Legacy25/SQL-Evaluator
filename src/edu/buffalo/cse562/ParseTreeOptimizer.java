@@ -1,11 +1,12 @@
 package edu.buffalo.cse562;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.operators.CrossProductOperator;
 import edu.buffalo.cse562.operators.ExternalHashJoinOperator;
@@ -36,10 +37,19 @@ public class ParseTreeOptimizer {
 		 */
 		
 		/* Decompose Select Clauses and push them down appropriately */
-		parseTree = decomposeAndPushDownSelects(parseTree);
+		parseTree = initialSelectionDecomposition(parseTree);
+		
+		/* Decompose multiple join predicates into one selection op each */
+//		parseTree = decomposeJoinPredicates(parseTree);
 		
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
+		
+		/* Reorder Cross Products to facilitate joins */
+//		parseTree = reOrderCrossProducts(parseTree);
+
+		/* Replace Selection over Cross Product with appropriate Join */
+//		parseTree = findJoinPatternAndReplace(parseTree);
 		
 		/* Other Patterns go here */
 		
@@ -48,8 +58,129 @@ public class ParseTreeOptimizer {
 		
 	}
 	
-	/* Pushing down Selects through Cross Products - helper methods */
+//	private static Operator decomposeJoinPredicates(Operator parseTree) {
+//
+//		if(parseTree == null) {
+//			return null;
+//		}
+//		
+//		if(parseTree instanceof SelectionOperator) {
+//			SelectionOperator select = (SelectionOperator) parseTree;
+//			Expression where = select.getWhere();
+//			
+//			if(where instanceof AndExpression) {
+//				ArrayList<Expression> clauseList = splitAndClauses(where);
+//				Expression joinPredicate = null;
+//				
+//				for(int i=0; i<clauseList.size(); i++) {
+//					Expression clause = clauseList.get(i);
+//					if(isJoinPredicate(clause)) {
+//						clauseList.remove(i);
+//						joinPredicate = clause;
+//						select.setWhere(mergeClauses(clauseList));
+//						select = new SelectionOperator(
+//								joinPredicate ,
+//								select
+//								);
+//						parseTree = select;
+//						break;
+//					}
+//				}
+//			}
+//		}
+//		
+//		
+//		/* Recursively traverse the entire tree in order */
+//		parseTree.setLeft(decomposeJoinPredicates(parseTree.getLeft()));
+//		parseTree.setRight(decomposeJoinPredicates(parseTree.getRight()));
+//		
+//		return parseTree;
+//	}
+//	
+//	private static Operator reOrderCrossProducts(Operator parseTree) {
+//		if(parseTree == null) {
+//			return null;
+//		}
+//		
+//		if(parseTree instanceof SelectionOperator) {
+//			SelectionOperator select = (SelectionOperator) parseTree;
+//			Expression where = select.getWhere();
+//			
+//			if(isJoinPredicate(where)) {
+//				System.out.println(select.getLeft().getClass());
+//				if(select.getLeft() instanceof SelectionOperator) {
+//					Operator cpOperatorParent = findCrossProduct(select);
+//					if(cpOperatorParent != null) {
+//						CrossProductOperator cpOperator = 
+//								(CrossProductOperator) cpOperatorParent.getLeft();
+//						
+//						Operator newCrossProduct = null;
+//						
+//						if(relationIsLeftOfCrossProduct(where, cpOperator)) {
+//							cpOperatorParent.setLeft(cpOperator.getRight());
+//							
+//							newCrossProduct = new CrossProductOperator(
+//									select.getLeft() ,
+//									cpOperator.getLeft()
+//									);
+//						}
+//						else {
+//							cpOperatorParent.setLeft(cpOperator.getLeft());
+//							
+//							newCrossProduct = new CrossProductOperator(
+//									select.getLeft() ,
+//									cpOperator.getRight()
+//									);
+//						}
+//
+//						
+//						parseTree.setLeft(newCrossProduct);
+//					}
+//				}
+//			}
+//		}
+//		
+//		
+//		/* Recursively traverse the entire tree in order */
+//		parseTree.setLeft(reOrderCrossProducts(parseTree.getLeft()));
+//		parseTree.setRight(reOrderCrossProducts(parseTree.getRight()));
+//		
+//		return parseTree;
+//	}
 	
+//	private static boolean relationIsLeftOfCrossProduct(Expression where,
+//			CrossProductOperator cpOperator) {
+//
+//		BinaryExpression joinClause = (BinaryExpression) where;
+//		Column leftColumn = (Column) joinClause.getLeftExpression();
+//		Schema leftSchema = cpOperator.getLeft().getSchema();
+//		Schema rightSchema = cpOperator.getRight().getSchema();
+//
+//		if(belongsToSchema(leftSchema, rightSchema, leftColumn) 
+//				== ClauseApplicability.INVALID) {
+//			return false;
+//		}
+//		
+//		return true;
+//	}
+//
+//	private static Operator findCrossProduct(
+//			Operator o) {
+//		if(o == null)
+//			return null;
+//		
+//		if(o.getLeft() instanceof CrossProductOperator)
+//			return o;
+//		
+//		Operator cpOperator = findCrossProduct(o.getLeft());
+//		if(cpOperator == null)
+//			return findCrossProduct(o.getLeft());
+//		else
+//			return cpOperator;
+//	}
+
+	/* Pushing down Selects through Cross Products - helper methods */
+
 	private static ClauseApplicability checkClauseApplicability(
 			Schema left, Schema right, Expression clause
 			) {
@@ -96,11 +227,47 @@ public class ParseTreeOptimizer {
 			if(ret != null)
 				return ret;
 		}
+		else if(clause instanceof Parenthesis) {
+			Parenthesis parenClause = (Parenthesis) clause;
+			Expression parenExpr = parenClause.getExpression();
+
+			if(parenExpr instanceof OrExpression) {
+				ArrayList<Expression> orClauseList = splitOrClauses(parenExpr);
+				
+				if(orClauseList.isEmpty()) {
+					/* Safety check */
+					return ClauseApplicability.INVALID;
+				}
+				
+				ClauseApplicability firstCa = checkClauseApplicability(left, right, orClauseList.get(0));
+				
+				for(int i=1; i<orClauseList.size(); i++) {
+					if(checkClauseApplicability(left, right, orClauseList.get(i)) != firstCa)
+						return ClauseApplicability.ROOT;
+				}
+				
+				return firstCa;
+			}
+		}
 		
 		return ClauseApplicability.INVALID;
 		
 	}
 	
+	public static ArrayList<Expression> splitOrClauses(Expression e) {
+		ArrayList<Expression> ret = new ArrayList<Expression>();
+		if(e instanceof OrExpression){
+			OrExpression a = (OrExpression) e;
+			ret.addAll(splitOrClauses(a.getLeftExpression()));
+			ret.addAll(splitOrClauses(a.getRightExpression()));
+		}
+		else {
+			ret.add(e);
+		}
+		
+		return ret;
+	}
+
 	private static ClauseApplicability 
 		belongsToSchema(Schema left, Schema right, Column column) {
 		
@@ -118,7 +285,7 @@ public class ParseTreeOptimizer {
 
 	
 	
-	private static Operator decomposeAndPushDownSelects(Operator parseTree) {
+	private static Operator initialSelectionDecomposition(Operator parseTree) {
 		if(parseTree == null) {
 			/* Leaf Node */
 			return null;
@@ -190,8 +357,8 @@ public class ParseTreeOptimizer {
 		}
 		
 		/* Recursively traverse the entire tree in order */
-		parseTree.setLeft(decomposeAndPushDownSelects(parseTree.getLeft()));
-		parseTree.setRight(decomposeAndPushDownSelects(parseTree.getRight()));
+		parseTree.setLeft(initialSelectionDecomposition(parseTree.getLeft()));
+		parseTree.setRight(initialSelectionDecomposition(parseTree.getRight()));
 		
 		return parseTree;
 	}
@@ -227,62 +394,59 @@ public class ParseTreeOptimizer {
 		if(parseTree instanceof SelectionOperator) {
 			SelectionOperator select = (SelectionOperator) parseTree;
 			
-			if(select.getLeft() != null) {
-				Operator child = select.getLeft();
-				
-				if(child instanceof CrossProductOperator) {
-					/* Pattern Matched, replace it with Join */
-					Operator leftChild = child.getLeft();
-					Operator rightChild = child.getRight();
-					
-					Expression where = select.getWhere();
+			Operator child = select.getLeft();
 
-					ArrayList<Expression> joinPredicates = new ArrayList<Expression>();
-					ArrayList<Expression> clauseList = new ArrayList<Expression>();
+			if(child instanceof CrossProductOperator) {
+				/* Pattern Matched, replace it with Join */
+				Operator leftChild = child.getLeft();
+				Operator rightChild = child.getRight();
+				
+				Expression where = select.getWhere();
+
+				ArrayList<Expression> joinPredicates = new ArrayList<Expression>();
+				ArrayList<Expression> clauseList = new ArrayList<Expression>();
+				
+				if(where instanceof AndExpression) {
+					clauseList = splitAndClauses(where);
 					
-					if(where instanceof AndExpression) {
-						clauseList = splitAndClauses(where);
-						
-						for(int i=0; i<clauseList.size(); i++) {
-							Expression clause = clauseList.get(i);
-							if(isJoinPredicate(clause)
-									//&& consistent(clause, joinPredicates)
-									) {
-								joinPredicates.add(clause);
-								clauseList.remove(clause);
-							}
+					for(int i=0; i<clauseList.size(); i++) {
+						Expression clause = clauseList.get(i);
+						if(isJoinPredicate(clause)
+								//&& consistent(clause, joinPredicates)
+								) {
+							joinPredicates.add(clause);
+							clauseList.remove(clause);
 						}
 					}
-					else {
-						joinPredicates.add(where);
-					}
-					
-					/* Pretty sure that joinPredicates will have at least
-					 * one member, but we still check for it
-					 */
-					
-					if(!clauseList.isEmpty()) {
-						parseTree = new SelectionOperator(
-								mergeClauses(clauseList),
-								parseTree
-								);
-						if(!joinPredicates.isEmpty()) {
-							parseTree.setLeft(new ExternalHashJoinOperator(
-								mergeClauses(joinPredicates) ,
-								leftChild ,
-								rightChild
-								)
+				}
+				else {
+					joinPredicates.add(where);
+				}
+				
+				/* Pretty sure that joinPredicates will have at least
+				 * one member, but we still check for it
+				 */
+				
+				if(!clauseList.isEmpty()) {
+					parseTree = new SelectionOperator(
+							mergeClauses(clauseList),
+							parseTree
 							);
-						}
-					} 
-					else if(!joinPredicates.isEmpty()) {
-						parseTree = new ExternalHashJoinOperator(
-								mergeClauses(joinPredicates) ,
-								leftChild ,
-								rightChild
-								);
+					if(!joinPredicates.isEmpty()) {
+						parseTree.setLeft(new ExternalHashJoinOperator(
+							mergeClauses(joinPredicates) ,
+							leftChild ,
+							rightChild
+							)
+						);
 					}
-					
+				} 
+				else if(!joinPredicates.isEmpty()) {
+					parseTree = new ExternalHashJoinOperator(
+							mergeClauses(joinPredicates) ,
+							leftChild ,
+							rightChild
+							);
 				}
 			}
 		}
@@ -298,37 +462,27 @@ public class ParseTreeOptimizer {
 	
 	
 	
-	private static boolean consistent(Expression clause,
-			ArrayList<Expression> joinPredicates) {
-
-		if(joinPredicates.isEmpty())
-			return true;
-		
-		HashSet<String> joinTables = new HashSet<String>();
-		BinaryExpression firstPredicate = (BinaryExpression) joinPredicates.get(0);
-		BinaryExpression bClause = (BinaryExpression) clause;
-		
-		joinTables.add(((Column) firstPredicate.getLeftExpression()).getTable().getWholeTableName());
-		joinTables.add(((Column) firstPredicate.getRightExpression()).getTable().getWholeTableName());
-		
-		if(joinTables.contains(((Column) bClause.getLeftExpression()).getTable().getWholeTableName())
-				&&
-				joinTables.contains(((Column) bClause.getRightExpression()).getTable().getWholeTableName())
-				)
-			return true;
-		
-		return false;
-	}
-
-	private static boolean isJoinPredicate(Expression clause) {
-
-		if(clause instanceof BinaryExpression) {
-			if(clause.toString().contains("="))
-				return true;
-		}
-		
-		return false;
-	}
+//	private static boolean consistent(Expression clause,
+//			ArrayList<Expression> joinPredicates) {
+//
+//		if(joinPredicates.isEmpty())
+//			return true;
+//		
+//		HashSet<String> joinTables = new HashSet<String>();
+//		BinaryExpression firstPredicate = (BinaryExpression) joinPredicates.get(0);
+//		BinaryExpression bClause = (BinaryExpression) clause;
+//		
+//		joinTables.add(((Column) firstPredicate.getLeftExpression()).getTable().getWholeTableName());
+//		joinTables.add(((Column) firstPredicate.getRightExpression()).getTable().getWholeTableName());
+//		
+//		if(joinTables.contains(((Column) bClause.getLeftExpression()).getTable().getWholeTableName())
+//				&&
+//				joinTables.contains(((Column) bClause.getRightExpression()).getTable().getWholeTableName())
+//				)
+//			return true;
+//		
+//		return false;
+//	}
 
 	public static ArrayList<Expression> splitAndClauses(Expression e) {
 	  
@@ -345,4 +499,17 @@ public class ParseTreeOptimizer {
 		return ret;
 	}
 	
+	public static Boolean isJoinPredicate(Expression e) {
+		
+		if(e instanceof BinaryExpression) {
+			BinaryExpression be = (BinaryExpression) e;
+			if(be.toString().contains("=")
+					&& be.getLeftExpression() instanceof Column
+					&& be.getRightExpression() instanceof Column)
+				
+				return true;
+		}
+		
+		return false;
+	}
 }
