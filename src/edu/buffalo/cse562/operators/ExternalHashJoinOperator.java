@@ -24,7 +24,7 @@ public class ExternalHashJoinOperator implements Operator {
 	 * 		A where predicate to give the join clause
 	 * 		Two child operators
 	 * 
-	 * Working Set Size - Size of both relations plus their hash key sets
+	 * Working Set Size - Size of the hash of the smaller table
 	 */	
 	
 	private Schema schema;			/* Schema for this table */
