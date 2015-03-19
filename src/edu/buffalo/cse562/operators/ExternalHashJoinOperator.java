@@ -106,7 +106,12 @@ public class ExternalHashJoinOperator implements Operator {
 		getSelectedColumns();
 		
 		/* Build the hash on both tables */
-		buildHash();
+		try {
+			buildHash();
+		} catch(OutOfMemoryError e) {
+			System.err.println("Ran out of memory while building hash for "+schema);
+			e.printStackTrace();
+		}
 
 		/* Generate the temporary list of joined tuples */
 		buildJoin();
@@ -156,8 +161,6 @@ public class ExternalHashJoinOperator implements Operator {
 		
 		LeafValue[] next;
 
-		child1.initialize();
-		
 		while((next = child1.readOneTuple()) != null) {
 			String key = "";
 			for(int i=0; i<selectedCols1.length; i++) {
@@ -175,8 +178,6 @@ public class ExternalHashJoinOperator implements Operator {
 			hash.get(key).add(next);
 		}
 
-		child1.reset();
-		
 	}
 	
 	@Override

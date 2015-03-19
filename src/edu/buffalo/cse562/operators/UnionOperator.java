@@ -69,7 +69,7 @@ public class UnionOperator implements Operator {
 				
 				/* 
 				 * Safe to do this, because the recursion stack will
-				 * grow by only one one call, however big the input
+				 * grow by only one call, however big the input
 				 */
 				return readOneTuple();
 			}

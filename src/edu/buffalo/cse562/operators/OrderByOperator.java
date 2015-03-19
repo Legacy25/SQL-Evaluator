@@ -102,6 +102,7 @@ public class OrderByOperator implements Operator {
 		 * it in memory
 		 */
 		sort();
+		
 	}
 
 	@Override
