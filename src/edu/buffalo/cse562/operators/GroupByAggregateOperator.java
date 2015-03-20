@@ -489,7 +489,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		childSchema = child.getSchema();
 		getSelectedColumns();
 		buildSchema();
-		System.out.println(childSchema.getColumns().size());
 		for(int i=0; i<selectedCols.length; i++) {
 			if(selectedCols[i])
 				System.out.println(i);
