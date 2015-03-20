@@ -93,6 +93,8 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		TypeCache = new HashMap<Column, ColumnInfo>();
 		output = new ArrayList<LeafValue[]>();
 		seenValues = new HashMap<String, Integer>();
+		selectedCols = new boolean[childSchema.getColumns().size()];
+		Arrays.fill(selectedCols, false);
 		
 		sum = new ArrayList<Double[]>();
 		max = new ArrayList<Double[]>();
@@ -103,6 +105,9 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		index = 0;
 		maxpos = -1;
 		currentpos = 0;
+
+		getSelectedColumns();
+		buildSchema();
 	}
 
 	private void getSelectedColumns() {
@@ -480,10 +485,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	@Override
 	public void initialize() {
 		child.initialize();
-		
-		selectedCols = new boolean[childSchema.getColumns().size()];
-		Arrays.fill(selectedCols, false);
-
 		getSelectedColumns();
 		buildSchema();
 		generateOutput();

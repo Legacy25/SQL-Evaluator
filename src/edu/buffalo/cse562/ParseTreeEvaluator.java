@@ -24,7 +24,7 @@ public class ParseTreeEvaluator {
 		}
 	}
 	
-	private static void display(LeafValue res[]) {
+	public static void display(LeafValue res[]) {
 		/* Formatting logic */
 		boolean flag = false;
 		

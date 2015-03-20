@@ -182,6 +182,11 @@ public class ProjectionOperator extends Eval implements Operator {
 	@Override
 	public void initialize() {
 		child.initialize();
+		
+		childSchema = child.getSchema();
+		
+		/* Build the new schema */
+		buildSchema();
 	}
 	
 	@Override

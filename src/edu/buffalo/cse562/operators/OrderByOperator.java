@@ -60,6 +60,7 @@ public class OrderByOperator implements Operator {
 		tempList = new ArrayList<LeafValue[]>();
 		index = 0;
 		column = 0;
+		findColumn(this.expr.toString());
 
 	}
 
@@ -94,8 +95,7 @@ public class OrderByOperator implements Operator {
 	@Override
 	public void initialize() {
 		child.initialize();
-
-		findColumn(this.expr.toString());
+		
 		/* 
 		 * Since this is an in-memory operation, initialize will load the
 		 * entire child relation into memory before sorting and then sort
