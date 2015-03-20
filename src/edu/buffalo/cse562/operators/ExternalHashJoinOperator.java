@@ -9,7 +9,6 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.schema.Column;
-import edu.buffalo.cse562.ParseTreeEvaluator;
 import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
@@ -121,8 +120,8 @@ public class ExternalHashJoinOperator implements Operator {
 
 		/* Generate the temporary list of joined tuples */
 		buildJoin();
-		
 		buildSchema();
+		
 	}
 	
 	public void getSelectedColumns() {
@@ -216,6 +215,7 @@ public class ExternalHashJoinOperator implements Operator {
 				if(selectedCols2[i])
 					key += next[i].toString();
 			}
+			
 			
 			ArrayList<LeafValue[]> matchedTuples = hash.get(key);
 			

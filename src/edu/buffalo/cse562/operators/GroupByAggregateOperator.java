@@ -393,6 +393,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		 */
 		schema = new Schema();
 		generateSchemaName();
+		TypeCache.clear();
 		
 		/* k keeps track of the column we are about to add to the schema */
 		int k = 0;
@@ -485,6 +486,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	@Override
 	public void initialize() {
 		child.initialize();
+		childSchema = child.getSchema();
 		getSelectedColumns();
 		buildSchema();
 		generateOutput();

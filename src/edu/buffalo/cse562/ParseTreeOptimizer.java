@@ -414,6 +414,7 @@ public class ParseTreeOptimizer {
 				if(isJoinPredicate(where)) {
 					ExternalHashJoinOperator joinOp = (ExternalHashJoinOperator) child;
 					joinOp.appendWhere(where);
+					parseTree = joinOp;
 				}
 					
 			}
