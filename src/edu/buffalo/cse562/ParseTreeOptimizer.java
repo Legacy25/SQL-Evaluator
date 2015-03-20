@@ -39,17 +39,14 @@ public class ParseTreeOptimizer {
 		/* Decompose Select Clauses and push them down appropriately */
 		parseTree = initialSelectionDecomposition(parseTree);
 		
-		/* Decompose multiple join predicates into one selection op each */
-//		parseTree = decomposeJoinPredicates(parseTree);
-		
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
 		
-		/* Reorder Cross Products to facilitate joins */
-//		parseTree = reOrderCrossProducts(parseTree);
-
-		/* Replace Selection over Cross Product with appropriate Join */
-//		parseTree = findJoinPatternAndReplace(parseTree);
+//		/* Generate appropriate table names after optimization */
+		parseTree.generateSchemaName();
+		
+		/* Reorder Cross Products to facilitate more joins */
+		parseTree = reOrderCrossProducts(parseTree);
 		
 		/* Other Patterns go here */
 		
@@ -58,126 +55,88 @@ public class ParseTreeOptimizer {
 		
 	}
 	
-//	private static Operator decomposeJoinPredicates(Operator parseTree) {
-//
-//		if(parseTree == null) {
-//			return null;
-//		}
-//		
-//		if(parseTree instanceof SelectionOperator) {
-//			SelectionOperator select = (SelectionOperator) parseTree;
-//			Expression where = select.getWhere();
-//			
-//			if(where instanceof AndExpression) {
-//				ArrayList<Expression> clauseList = splitAndClauses(where);
-//				Expression joinPredicate = null;
-//				
-//				for(int i=0; i<clauseList.size(); i++) {
-//					Expression clause = clauseList.get(i);
-//					if(isJoinPredicate(clause)) {
-//						clauseList.remove(i);
-//						joinPredicate = clause;
-//						select.setWhere(mergeClauses(clauseList));
-//						select = new SelectionOperator(
-//								joinPredicate ,
-//								select
-//								);
-//						parseTree = select;
-//						break;
-//					}
-//				}
-//			}
-//		}
-//		
-//		
-//		/* Recursively traverse the entire tree in order */
-//		parseTree.setLeft(decomposeJoinPredicates(parseTree.getLeft()));
-//		parseTree.setRight(decomposeJoinPredicates(parseTree.getRight()));
-//		
-//		return parseTree;
-//	}
-//	
-//	private static Operator reOrderCrossProducts(Operator parseTree) {
-//		if(parseTree == null) {
-//			return null;
-//		}
-//		
-//		if(parseTree instanceof SelectionOperator) {
-//			SelectionOperator select = (SelectionOperator) parseTree;
-//			Expression where = select.getWhere();
-//			
-//			if(isJoinPredicate(where)) {
-//				System.out.println(select.getLeft().getClass());
-//				if(select.getLeft() instanceof SelectionOperator) {
-//					Operator cpOperatorParent = findCrossProduct(select);
-//					if(cpOperatorParent != null) {
-//						CrossProductOperator cpOperator = 
-//								(CrossProductOperator) cpOperatorParent.getLeft();
-//						
-//						Operator newCrossProduct = null;
-//						
-//						if(relationIsLeftOfCrossProduct(where, cpOperator)) {
-//							cpOperatorParent.setLeft(cpOperator.getRight());
-//							
-//							newCrossProduct = new CrossProductOperator(
-//									select.getLeft() ,
-//									cpOperator.getLeft()
-//									);
-//						}
-//						else {
-//							cpOperatorParent.setLeft(cpOperator.getLeft());
-//							
-//							newCrossProduct = new CrossProductOperator(
-//									select.getLeft() ,
-//									cpOperator.getRight()
-//									);
-//						}
-//
-//						
-//						parseTree.setLeft(newCrossProduct);
-//					}
-//				}
-//			}
-//		}
-//		
-//		
-//		/* Recursively traverse the entire tree in order */
-//		parseTree.setLeft(reOrderCrossProducts(parseTree.getLeft()));
-//		parseTree.setRight(reOrderCrossProducts(parseTree.getRight()));
-//		
-//		return parseTree;
-//	}
+	private static Operator reOrderCrossProducts(Operator parseTree) {
+		if(parseTree == null) {
+			return null;
+		}
+		
+		
+		/* Recursively traverse the entire tree bottom up */
+		parseTree.setLeft(reOrderCrossProducts(parseTree.getLeft()));
+		parseTree.setRight(reOrderCrossProducts(parseTree.getRight()));
+		
+		
+		if(parseTree instanceof SelectionOperator) {
+			SelectionOperator select = (SelectionOperator) parseTree;
+			Expression where = select.getWhere();
+			
+			if(isJoinPredicate(where)) {
+				if(select.getLeft() instanceof ExternalHashJoinOperator) {
+					Operator cpOperatorParent = findCrossProduct(select);
+					if(cpOperatorParent != null) {
+						CrossProductOperator cpOperator = 
+								(CrossProductOperator) cpOperatorParent.getLeft();
+						
+						Operator newCrossProduct = null;
+						
+						if(relationIsLeftOfCrossProduct(where, cpOperator)) {
+							cpOperatorParent.setLeft(cpOperator.getRight());
+							
+							newCrossProduct = new CrossProductOperator(
+									select.getLeft() ,
+									cpOperator.getLeft()
+									);
+						}
+						else {
+							cpOperatorParent.setLeft(cpOperator.getLeft());
+							
+							newCrossProduct = new CrossProductOperator(
+									select.getLeft() ,
+									cpOperator.getRight()
+									);
+						}
+
+						
+						parseTree.setLeft(newCrossProduct);
+						parseTree = findJoinPatternAndReplace(parseTree);
+					}
+				}
+			}
+		}
+		
+		return parseTree;
+	}
 	
-//	private static boolean relationIsLeftOfCrossProduct(Expression where,
-//			CrossProductOperator cpOperator) {
-//
-//		BinaryExpression joinClause = (BinaryExpression) where;
-//		Column leftColumn = (Column) joinClause.getLeftExpression();
-//		Schema leftSchema = cpOperator.getLeft().getSchema();
-//		Schema rightSchema = cpOperator.getRight().getSchema();
-//
-//		if(belongsToSchema(leftSchema, rightSchema, leftColumn) 
-//				== ClauseApplicability.INVALID) {
-//			return false;
-//		}
-//		
-//		return true;
-//	}
-//
-//	private static Operator findCrossProduct(
-//			Operator o) {
-//		if(o == null)
-//			return null;
-//		
-//		if(o.getLeft() instanceof CrossProductOperator)
-//			return o;
-//		
-//		Operator cpOperator = findCrossProduct(o.getLeft());
-//		if(cpOperator == null)
-//			return findCrossProduct(o.getLeft());
-//		else
-//			return cpOperator;
-//	}
+	private static boolean relationIsLeftOfCrossProduct(Expression where,
+			CrossProductOperator cpOperator) {
+
+		BinaryExpression joinClause = (BinaryExpression) where;
+		Column leftColumn = (Column) joinClause.getLeftExpression();
+		Schema leftSchema = cpOperator.getLeft().getSchema();
+		Schema rightSchema = cpOperator.getRight().getSchema();
+
+		if(belongsToSchema(leftSchema, rightSchema, leftColumn) 
+				== ClauseApplicability.INVALID) {
+			return false;
+		}
+		
+		return true;
+	}
+
+	private static Operator findCrossProduct(
+			Operator o) {
+		if(o == null)
+			return null;
+		
+		if(o.getLeft() instanceof CrossProductOperator)
+			return o;
+		
+		Operator cpOperator = findCrossProduct(o.getLeft());
+		if(cpOperator == null)
+			return findCrossProduct(o.getLeft());
+		else
+			return cpOperator;
+	}
 
 	/* Pushing down Selects through Cross Products - helper methods */
 
