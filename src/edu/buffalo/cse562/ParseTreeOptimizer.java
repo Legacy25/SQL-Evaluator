@@ -41,10 +41,7 @@ public class ParseTreeOptimizer {
 		
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
-		
-		/* Generate appropriate table names after optimization */
-		parseTree.generateSchemaName();
-		
+				
 		/* Reorder Cross Products to facilitate more joins */
 		parseTree = reOrderCrossProducts(parseTree);
 		

@@ -93,8 +93,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		TypeCache = new HashMap<Column, ColumnInfo>();
 		output = new ArrayList<LeafValue[]>();
 		seenValues = new HashMap<String, Integer>();
-		selectedCols = new boolean[childSchema.getColumns().size()];
-		Arrays.fill(selectedCols, false);
 		
 		sum = new ArrayList<Double[]>();
 		max = new ArrayList<Double[]>();
@@ -102,20 +100,19 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		avg = new ArrayList<Double[]>();
 		count = new ArrayList<Integer[]>();
 		
-		index = 0;
-		maxpos = -1;
-		currentpos = 0;
-
 		buildSchema();
 	}
 
 	private void getSelectedColumns() {
+
+		selectedCols = new boolean[childSchema.getColumns().size()];
+		Arrays.fill(selectedCols, false);
 		
 		ArrayList<ColumnWithType> schemaCols = childSchema.getColumns();
 		
 		for(int i=0; i<columns.size(); i++) {
 			for(int j=0; j<schemaCols.size(); j++) {
-				if(columns.get(i).getColumnName().equalsIgnoreCase(schemaCols.get(j).getColumnName())
+				if(columns.get(i).getWholeColumnName().equalsIgnoreCase(schemaCols.get(j).getColumnName())
 						|| columns.get(i).getWholeColumnName().equalsIgnoreCase(schemaCols.get(j).getWholeColumnName())) {
 					selectedCols[j] = true;
 				}
@@ -393,7 +390,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		schema = new Schema();
 		generateSchemaName();
 		TypeCache.clear();
-		Arrays.fill(selectedCols, false);
 		
 		/* k keeps track of the column we are about to add to the schema */
 		int k = 0;
@@ -414,17 +410,21 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 				SelectExpressionItem sei = (SelectExpressionItem) si;
 				Expression expr = sei.getExpression();
 				
-				col.setColumnName(expr.toString());
-				if(sei.getAlias() != null) {
-					col.setColumnName(sei.getAlias());
-				}
-				
 				if(expr instanceof Function) {
+					col.setColumnName(expr.toString());
+					if(sei.getAlias() != null) {
+						col.setColumnName(sei.getAlias());
+					}
+					
 					col.setColumnType("double");		// Assume all functions compute double answers
 					schema.addColumn(col);
 				}
-				else {
+				else if (expr instanceof Column){
 					Column arg0 = (Column) expr;
+					col.setColumnName(arg0.getWholeColumnName());
+					if(sei.getAlias() != null) {
+						col.setColumnName(sei.getAlias());
+					}
 					for(int j=0; j<childSchema.getColumns().size(); j++) {
 						if(arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(j).getWholeColumnName().toString())
 								|| arg0.getWholeColumnName().equalsIgnoreCase(childSchema.getColumns().get(j).getColumnName().toString())) {
@@ -487,12 +487,14 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	public void initialize() {
 		child.initialize();
 		childSchema = child.getSchema();
+		
+		index = 0;
+		maxpos = -1;
+		currentpos = 0;
+
 		getSelectedColumns();
 		buildSchema();
-		for(int i=0; i<selectedCols.length; i++) {
-			if(selectedCols[i])
-				System.out.println(i);
-		}
+
 		generateOutput();
 	}
 	
