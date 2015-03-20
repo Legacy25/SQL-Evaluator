@@ -42,11 +42,11 @@ public class ParseTreeOptimizer {
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
 				
-		/* Reorder Cross Products to facilitate more joins */
-		parseTree = reOrderCrossProducts(parseTree);
-		
-		/* Replace Selection over Cross Product with appropriate Join */
-		parseTree = findJoinPatternAndReplace(parseTree);
+//		/* Reorder Cross Products to facilitate more joins */
+//		parseTree = reOrderCrossProducts(parseTree);
+//		
+//		/* Replace Selection over Cross Product with appropriate Join */
+//		parseTree = findJoinPatternAndReplace(parseTree);
 		
 		/* Other Patterns go here */
 		
