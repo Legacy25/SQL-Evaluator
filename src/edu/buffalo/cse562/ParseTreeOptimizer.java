@@ -42,11 +42,14 @@ public class ParseTreeOptimizer {
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
 		
-//		/* Generate appropriate table names after optimization */
+		/* Generate appropriate table names after optimization */
 		parseTree.generateSchemaName();
 		
 		/* Reorder Cross Products to facilitate more joins */
 		parseTree = reOrderCrossProducts(parseTree);
+		
+		/* Replace Selection over Cross Product with appropriate Join */
+		parseTree = findJoinPatternAndReplace(parseTree);
 		
 		/* Other Patterns go here */
 		
@@ -352,6 +355,7 @@ public class ParseTreeOptimizer {
 
 		if(parseTree instanceof SelectionOperator) {
 			SelectionOperator select = (SelectionOperator) parseTree;
+			Expression where = select.getWhere();
 			
 			Operator child = select.getLeft();
 
@@ -359,8 +363,6 @@ public class ParseTreeOptimizer {
 				/* Pattern Matched, replace it with Join */
 				Operator leftChild = child.getLeft();
 				Operator rightChild = child.getRight();
-				
-				Expression where = select.getWhere();
 
 				ArrayList<Expression> joinPredicates = new ArrayList<Expression>();
 				ArrayList<Expression> clauseList = new ArrayList<Expression>();
@@ -407,6 +409,13 @@ public class ParseTreeOptimizer {
 							rightChild
 							);
 				}
+			}
+			else if(child instanceof ExternalHashJoinOperator) {
+				if(isJoinPredicate(where)) {
+					ExternalHashJoinOperator joinOp = (ExternalHashJoinOperator) child;
+					joinOp.appendWhere(where);
+				}
+					
 			}
 		}
 		

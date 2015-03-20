@@ -54,16 +54,9 @@ public class ExternalHashJoinOperator implements Operator {
 		
 		buildSchema();
 	}
-		
-	public ExternalHashJoinOperator(Expression where, ExternalHashJoinOperator operator) {
-		this.where =  new AndExpression(this.where, where);
-		this.child1 = operator.child1;
-		this.child2 = operator.child2;
-		
-		tempList = new ArrayList<LeafValue[]>();
-		hash = new HashMap<String, ArrayList<LeafValue[]>>(10000, (float) 0.5);
-		
-		this.schema = operator.getSchema();
+	
+	public void appendWhere(Expression where) {
+		this.where = new AndExpression(this.where, where);
 	}
 
 	private void buildSchema() {
@@ -122,7 +115,6 @@ public class ExternalHashJoinOperator implements Operator {
 		try {
 			buildHash();
 		} catch(OutOfMemoryError e) {
-			System.err.println("Ran out of memory while building hash for "+schema);
 			e.printStackTrace();
 		}
 
