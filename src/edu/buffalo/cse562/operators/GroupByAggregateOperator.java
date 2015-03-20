@@ -181,9 +181,9 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 				}
 			}
 			
-			
-			if(seenValues.containsKey(key)) {
-				currentpos = seenValues.get(key);
+			Integer currentposObj = seenValues.get(key);
+			if(currentposObj != null) {
+				currentpos = currentposObj.intValue();
 			}
 			else {
 				maxpos++;
@@ -195,8 +195,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 				seenValues.put(key, currentpos);
 				
 				resetCounters(currentpos);
-				
-				
 			}
 			
 			LeafValue[] ret = generateReturn();
@@ -229,19 +227,19 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 					else {
 						ex = childSchema.getColumns().get(0);
 					}
-					
+
+					LeafValue reslv = null;
+					try {
+						reslv = eval(ex);
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
 					
 					//===============================SUM=======================================
 					if(funName.equalsIgnoreCase("SUM")) {
 						
 						try {
-							if(eval(ex) != null) {
-								double res = eval(ex).toDouble();
-								sum.get(currentpos)[k] += res;
-							}
-							
-						} catch (SQLException e) {
-							System.exit(1);
+							sum.get(currentpos)[k] += reslv.toDouble();
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
@@ -249,21 +247,14 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 
 					}
 					
-					
-					
 					//===============================AVG=======================================
 					else if(funName.equalsIgnoreCase("AVG")) {
 						
 						try {
-							if(eval(ex) != null) {
-								double res = eval(ex).toDouble();
-								sum.get(currentpos)[k] += res;
-								count.get(currentpos)[k]++;
-								avg.get(currentpos)[k] = sum.get(currentpos)[k] / count.get(currentpos)[k];
-							}
-							
-						} catch (SQLException e) {
-							System.exit(1);
+							double res = reslv.toDouble();
+							sum.get(currentpos)[k] += res;
+							count.get(currentpos)[k]++;
+							avg.get(currentpos)[k] = sum.get(currentpos)[k] / count.get(currentpos)[k];
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
@@ -271,78 +262,36 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 						
 					}
 					
-					
-					
 					//===============================COUNT=======================================
 					else if(funName.equalsIgnoreCase("COUNT")) {
-						
-						try {
-							if(eval(ex) != null) {
-								count.get(currentpos)[k]++;
-							}
-							
-						} catch (SQLException e) {
-							System.exit(1);
-						}
+						count.get(currentpos)[k]++;
 						ret[k] = new DoubleValue(count.get(currentpos)[k]);		
-						
 					}
-					
-					
 					
 					//===============================MIN=======================================
 					else if(funName.equalsIgnoreCase("MIN")) {
-						
 						try {
-							if(eval(ex) != null) {
-								double res = eval(ex).toDouble();
-								if(min.get(currentpos)[k] > res)
-									min.get(currentpos)[k] = res;
-							}
-							
-						} catch (SQLException e) {
-							System.exit(1);
+							double res = reslv.toDouble();
+							if(min.get(currentpos)[k] > res)
+								min.get(currentpos)[k] = res;
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
 						ret[k] = new DoubleValue(min.get(currentpos)[k]);		
-						
 					}
-					
-					
-					
 					
 					//===============================MAX=======================================
 					else if(funName.equalsIgnoreCase("MAX")) {
-						
 						try {
-							if(eval(ex) != null) {
-								double res = eval(ex).toDouble();
-								if(max.get(currentpos)[k] < res)
-									max.get(currentpos)[k] = res;
-							}
-							
-						} catch (SQLException e) {
-							System.exit(1);
+							double res = reslv.toDouble();
+							if(max.get(currentpos)[k] < res)
+								max.get(currentpos)[k] = res;
 						} catch (InvalidLeaf e) {
 							System.exit(1);
 						}
 						ret[k] = new DoubleValue(max.get(currentpos)[k]);		
-						
 					}
-					
-					
-					
-					//==========================================================================
-					else {
-						System.err.println("Unsupported aggregate function "+funName);
-					}
-					
-					
-					
 				}
-				
-				
 				else {
 					try {
 						ret[k] = eval(expr);
@@ -551,27 +500,18 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		
 		switch(type) {
 		case "int":
-			try {
-				lv = new LongValue(next[pos].toLong());
-
-			} catch (InvalidLeaf e) {
-				System.exit(1);
-			}
+			lv = (LongValue) next[pos];
 			break;
 		case "decimal":
-			try {
-				lv = new DoubleValue(next[pos].toDouble());
-			} catch (InvalidLeaf e) {
-				System.exit(1);
-			}
+			lv = (DoubleValue) next[pos];
 			break;
 		case "char":
 		case "varchar":
 		case "string":
-			lv = new StringValue(next[pos].toString());
+			lv = (StringValue) next[pos];
 			break;
 		case "date":
-			lv = new DateValue(" "+next[pos].toString()+" ");
+			lv = (DateValue) next[pos];
 			break;
 		default:
 			throw new SQLException();
