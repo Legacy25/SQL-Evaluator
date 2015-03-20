@@ -106,7 +106,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		maxpos = -1;
 		currentpos = 0;
 
-		getSelectedColumns();
 		buildSchema();
 	}
 
@@ -394,6 +393,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		schema = new Schema();
 		generateSchemaName();
 		TypeCache.clear();
+		Arrays.fill(selectedCols, false);
 		
 		/* k keeps track of the column we are about to add to the schema */
 		int k = 0;
@@ -489,6 +489,11 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 		childSchema = child.getSchema();
 		getSelectedColumns();
 		buildSchema();
+		System.out.println(childSchema.getColumns().size());
+		for(int i=0; i<selectedCols.length; i++) {
+			if(selectedCols[i])
+				System.out.println(i);
+		}
 		generateOutput();
 	}
 	
