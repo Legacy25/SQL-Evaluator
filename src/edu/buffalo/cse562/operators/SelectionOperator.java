@@ -1,9 +1,11 @@
 package edu.buffalo.cse562.operators;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import edu.buffalo.cse562.Eval;
+import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.Schema;
 import net.sf.jsqlparser.expression.BooleanValue;
@@ -58,6 +60,8 @@ public class SelectionOperator extends Eval implements Operator {
 	 * 
 	 */
 	private HashMap<Column, ColumnInfo> TypeCache;
+	
+	private ArrayList<Expression> clauseList; 
 		
 	
 	
@@ -89,6 +93,7 @@ public class SelectionOperator extends Eval implements Operator {
 	@Override
 	public void initialize() {
 		child.initialize();
+		clauseList = ParseTreeOptimizer.splitAndClauses(where);
 	}
 	
 	@Override
@@ -104,7 +109,13 @@ public class SelectionOperator extends Eval implements Operator {
 				 * Test the validity of the selection predicate
 				 * for the current tuple, represented by next[]
 				 */
-				test = (BooleanValue) eval(where);
+				for(int i=0; i<clauseList.size(); i++) {
+					test = (BooleanValue) eval(clauseList.get(i));
+					if(!test.getValue())
+						break;
+				}
+				
+				
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
