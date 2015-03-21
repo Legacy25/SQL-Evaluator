@@ -23,6 +23,16 @@ public class Main {
 	 */
 	public static File swapDirectory;
 	
+	/*
+	 * Provides application wide access to information 
+	 * regarding whether there is a memory limit,
+	 * this is of use to the parse-tree optimizer
+	 * in choosing non-blocking operators
+	 */
+	public static boolean memoryLimitsOn = false;
+	
+	
+	
 	public static void main(String[] args) {
 		
 //		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -32,6 +42,12 @@ public class Main {
 //		} catch (IOException e) {
 //			e.printStackTrace();
 //		}
+		
+		
+		/* Detect whether limited memory is available */
+		if(Runtime.getRuntime().maxMemory() / 1024 / 1024 < 100)
+			memoryLimitsOn = true;
+		
 
 		/* Stores the data directories */
 		ArrayList<String> dataDirs = new ArrayList<String>();

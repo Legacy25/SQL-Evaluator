@@ -11,7 +11,6 @@ import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LeafValue;
-import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
@@ -176,26 +175,18 @@ public class SelectionOperator extends Eval implements Operator {
 		
 		switch(type) {
 		case "int":
-			try {
-				lv = new LongValue(next[pos].toLong());
-			} catch (InvalidLeaf e) {
-				e.printStackTrace();
-			}
+			lv = (LongValue) next[pos];
 			break;
 		case "decimal":
-			try {
-				lv = new DoubleValue(next[pos].toDouble());
-			} catch (InvalidLeaf e) {
-				e.printStackTrace();
-			}
+			lv = (DoubleValue) next[pos];
 			break;
 		case "char":
 		case "varchar":
 		case "string":
-			lv = new StringValue(next[pos].toString());
+			lv = (StringValue) next[pos];
 			break;
 		case "date":
-			lv = new DateValue(" "+next[pos].toString()+" ");
+			lv = (DateValue) next[pos];
 			break;
 		default:
 			throw new SQLException();
