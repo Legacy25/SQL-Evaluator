@@ -270,4 +270,8 @@ public class GraceHashJoinOperator implements Operator {
 	public void setRight(Operator o) {
 		child2 = o;
 	}
+	
+	public Expression getWhere() {
+		return where;
+	}
 }

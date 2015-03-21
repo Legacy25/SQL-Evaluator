@@ -408,30 +408,13 @@ public class ParseTreeGenerator {
 		//========================ORDER BY======================================
 		
 		if(ps.getOrderByElements() != null) {
-			@SuppressWarnings("rawtypes")
-			Iterator i = ps.getOrderByElements().iterator();
-			ArrayList<OrderByElement> obe = new ArrayList<OrderByElement>();
+			ArrayList<OrderByElement> obe = (ArrayList<OrderByElement>) ps.getOrderByElements();
 			
-			/* If there are more than one attributes to sort on, we need
-			 * to sort by the last attribute first, for this reason
-			 * we need to call order-by on the last attribute first
-			 */
-			while(i.hasNext()) {
-				obe.add((OrderByElement) i.next());
-			}
-			
-			/*
-			 * After copying all attributes to the obe list, insert
-			 * OrderBy Operators in a LIFO fashion
-			 */
-			for(int i1=obe.size()-1; i1>=0; i1--) {
-				parseTree =
-						new OrderByOperator(
-								obe.get(i1).getExpression() ,
-								obe.get(i1).isAsc() ,
-								parseTree
-						);
-			}
+			parseTree =
+					new OrderByOperator(
+							obe ,
+							parseTree
+					);
 
 		}
 		

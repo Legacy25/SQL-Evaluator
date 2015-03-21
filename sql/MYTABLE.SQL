@@ -59,11 +59,12 @@ CREATE TABLE REGION (
     );
 
 SELECT  
-        DISTINCT
-        nation.name
+        customer.name, nation.name
 FROM    
         nation,
         customer
 WHERE   
-        customer.nationkey = nation.nationkey;
+        customer.nationkey = nation.nationkey
+ORDER BY
+        nation.name desc, customer.name desc;
 

@@ -441,6 +441,8 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 		maxpos = -1;
 		currentpos = 0;
 
+		seenValues.clear();
+		
 		getSelectedColumns();
 		buildSchema();
 
@@ -465,7 +467,6 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 	public void reset() {
 		/* First clean up state information, and reset the index */
 		index = 0;
-		seenValues.clear();
 		
 		/* Then reset the child operator */
 		child.reset();
