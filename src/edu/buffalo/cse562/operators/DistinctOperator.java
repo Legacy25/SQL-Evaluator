@@ -1,7 +1,7 @@
 package edu.buffalo.cse562.operators;
 
 
-import java.util.HashMap;
+import java.util.HashSet;
 
 import net.sf.jsqlparser.expression.LeafValue;
 import edu.buffalo.cse562.schema.Schema;
@@ -29,12 +29,12 @@ public class DistinctOperator implements Operator {
 
 	private Operator child;			/* The child operator */
 	
-	private HashMap<String, Boolean> seenValues;		/* Keeps a record
-															of seen values till now.
-															The Boolean is a bogus
-	 														value, we just need to
-	 														check for the presence
-	 														of the key in the map. */
+	private HashSet<String> seenValues;		/* Keeps a record
+											of seen values till now.
+											The Boolean is a bogus
+											value, we just need to
+											check for the presence
+											of the key in the map. */
 	
 	
 	public DistinctOperator(Operator child) {
@@ -47,7 +47,7 @@ public class DistinctOperator implements Operator {
 		generateSchemaName();
 		
 		/* Initializations */
-		seenValues = new HashMap<String, Boolean>();
+		seenValues = new HashSet<String>();
 	}
 	
 	public void generateSchemaName() {
@@ -64,6 +64,12 @@ public class DistinctOperator implements Operator {
 	@Override
 	public void initialize() {
 		child.initialize();
+		
+		/* Schema is unchanged from the child's schema */
+		schema = new Schema(child.getSchema());
+		
+		/* Set an appropriate table name, for book-keeping */
+		generateSchemaName();
 	}
 
 	@Override
@@ -84,11 +90,11 @@ public class DistinctOperator implements Operator {
 			key = key.toLowerCase();
 			
 			/* If we have seen this value, disregard this tuple */
-			if(seenValues.containsKey(key))
+			if(seenValues.contains(key))
 				continue;
 			
 			/* Otherwise, add this to the map of seen value and return it */
-			seenValues.put(key, true);
+			seenValues.add(key);
 			return next;
 		}
 		

@@ -26,7 +26,7 @@ import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
-public class GroupByAggregateOperator extends Eval implements Operator {
+public class ProjectionGroupByAggregateOperator extends Eval implements Operator {
 
 	/*
 	 * Group-By-Aggregate-Projection Operator
@@ -80,7 +80,7 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	
 	private ArrayList<LeafValue[]> output;
 	
-	public GroupByAggregateOperator(ArrayList<Column> columns, List<SelectItem> selectItems, Operator child) {
+	public ProjectionGroupByAggregateOperator(ArrayList<Column> columns, List<SelectItem> selectItems, Operator child) {
 		this.selectItems = selectItems;
 		this.child = child;
 		this.columns = columns;
@@ -543,6 +543,6 @@ public class GroupByAggregateOperator extends Eval implements Operator {
 	@Override
 	public void generateSchemaName() {
 		child.generateSchemaName();
-		schema.setTableName("\u03C0(\u03A3(" + child.getSchema().getTableName() + "))");
+		schema.setTableName("\u03C0(G(\u03A3(" + child.getSchema().getTableName() + "))");
 	}
 }

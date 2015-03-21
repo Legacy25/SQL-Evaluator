@@ -43,6 +43,12 @@ public class UnionOperator implements Operator {
 	public void initialize() {
 		child1.initialize();
 		child2.initialize();
+		
+		/* Schema is unchanged from the child's schema */
+		schema = new Schema(child1.getSchema());
+		
+		/* Set an appropriate table name, for book-keeping */
+		generateSchemaName();
 	}
 
 

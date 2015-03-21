@@ -28,7 +28,7 @@ import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
 import edu.buffalo.cse562.exceptions.UnsupportedStatementException;
 import edu.buffalo.cse562.operators.DistinctOperator;
-import edu.buffalo.cse562.operators.GroupByAggregateOperator;
+import edu.buffalo.cse562.operators.ProjectionGroupByAggregateOperator;
 import edu.buffalo.cse562.operators.CrossProductOperator;
 import edu.buffalo.cse562.operators.LimitOperator;
 import edu.buffalo.cse562.operators.Operator;
@@ -364,7 +364,7 @@ public class ParseTreeGenerator {
 			
 			if(parseTree.getLeft() != null)
 				parseTree = 
-						new GroupByAggregateOperator(
+						new ProjectionGroupByAggregateOperator(
 								selectedColumns ,
 								ps.getSelectItems() ,
 								parseTree

@@ -49,6 +49,12 @@ public class LimitOperator implements Operator {
 	@Override
 	public void initialize() {
 		child.initialize();
+		
+		/* Schema is unchanged from the child's schema */
+		schema = new Schema(child.getSchema());
+		
+		/* Set an appropriate table name, for book-keeping */
+		generateSchemaName();
 	}
 	
 	@Override
