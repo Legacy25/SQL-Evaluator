@@ -13,7 +13,7 @@ import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
-public class ExternalHashJoinOperator implements Operator {
+public class GraceHashJoinOperator implements Operator {
 
 	/*
 	 * External Hash Join Operator
@@ -44,7 +44,7 @@ public class ExternalHashJoinOperator implements Operator {
 	private boolean[] selectedCols2;
 	
 	
-	public ExternalHashJoinOperator(Expression where, Operator child1, Operator child2) {
+	public GraceHashJoinOperator(Expression where, Operator child1, Operator child2) {
 		this.where =  where;
 		this.child1 = child1;
 		this.child2 = child2;

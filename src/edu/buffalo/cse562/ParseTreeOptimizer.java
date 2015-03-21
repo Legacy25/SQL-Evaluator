@@ -9,7 +9,7 @@ import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.operators.CrossProductOperator;
-import edu.buffalo.cse562.operators.ExternalHashJoinOperator;
+import edu.buffalo.cse562.operators.GraceHashJoinOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.SelectionOperator;
 import edu.buffalo.cse562.schema.Schema;
@@ -71,7 +71,7 @@ public class ParseTreeOptimizer {
 //			Expression where = select.getWhere();
 //			
 //			if(isJoinPredicate(where)) {
-//				if(select.getLeft() instanceof ExternalHashJoinOperator) {
+//				if(select.getLeft() instanceof GraceHashJoinOperator) {
 //					Operator cpOperatorParent = findCrossProduct(select);
 //					if(cpOperatorParent != null) {
 //						CrossProductOperator cpOperator = 
@@ -391,7 +391,7 @@ public class ParseTreeOptimizer {
 							parseTree
 							);
 					if(!joinPredicates.isEmpty()) {
-						parseTree.setLeft(new ExternalHashJoinOperator(
+						parseTree.setLeft(new GraceHashJoinOperator(
 							mergeClauses(joinPredicates) ,
 							leftChild ,
 							rightChild
@@ -400,16 +400,16 @@ public class ParseTreeOptimizer {
 					}
 				} 
 				else if(!joinPredicates.isEmpty()) {
-					parseTree = new ExternalHashJoinOperator(
+					parseTree = new GraceHashJoinOperator(
 							mergeClauses(joinPredicates) ,
 							leftChild ,
 							rightChild
 							);
 				}
 			}
-			else if(child instanceof ExternalHashJoinOperator) {
+			else if(child instanceof GraceHashJoinOperator) {
 				if(isJoinPredicate(where)) {
-					ExternalHashJoinOperator joinOp = (ExternalHashJoinOperator) child;
+					GraceHashJoinOperator joinOp = (GraceHashJoinOperator) child;
 					joinOp.appendWhere(where);
 					parseTree = joinOp;
 				}
