@@ -15,8 +15,7 @@ public class OrderByOperator implements Operator {
 	 * 		Sorts the child relation
 	 * 
 	 * Constructor Variables
-	 * 		An expression - The sort key attribute
-	 * 		A boolean which determines the sort order, ascending or descending
+	 * 		Order By attributes list
 	 * 		The child operator
 	 * 
 	 * Working Set Size - The size of the relation
@@ -135,6 +134,10 @@ public class OrderByOperator implements Operator {
 	@Override
 	public void setRight(Operator o) {
 
+	}
+
+	public ArrayList<OrderByElement> getArguments() {
+		return arguments;
 	}
 
 }
