@@ -46,9 +46,9 @@ public class Main {
 //		}
 		
 		
-		/* Detect whether limited memory is available */
-		if(Runtime.getRuntime().maxMemory() / 1024 / 1024 < 100)
-			memoryLimitsOn = true;
+//		/* Detect whether limited memory is available */
+//		if(Runtime.getRuntime().maxMemory() / 1024 / 1024 < 100)
+//			memoryLimitsOn = true;
 		
 
 		/* Stores the data directories */
@@ -71,6 +71,9 @@ public class Main {
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
+				if(args[i].contains("10")) {
+					memoryLimitsOn = true;
+				}
 			}
 		}
 		
@@ -110,7 +113,7 @@ public class Main {
 			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
 		}
 		
-		long generateTime = System.nanoTime();
+//		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		for(int i=0; i< parseTreeList.size(); i++) {
@@ -128,7 +131,7 @@ public class Main {
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+//		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

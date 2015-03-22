@@ -25,12 +25,10 @@ import java.util.Iterator;
 
 import edu.buffalo.cse562.LeafValueComparator;
 import edu.buffalo.cse562.Main;
-import edu.buffalo.cse562.schema.ColumnInfo;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.schema.Column;
 
 public class ExternalSortOperator implements Operator {
 
