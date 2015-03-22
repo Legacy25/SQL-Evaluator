@@ -50,9 +50,9 @@ public class ParseTreeOptimizer {
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
 		
-		if(Main.memoryLimitsOn) {
-			parseTree = optimizeMemory(parseTree);
-		}
+//		if(Main.memoryLimitsOn) {
+//			parseTree = optimizeMemory(parseTree);
+//		}
 		
 		/* Other Patterns go here */
 		
