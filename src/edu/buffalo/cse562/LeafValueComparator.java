@@ -45,11 +45,10 @@ public class LeafValueComparator implements Comparator<LeafValue[]> {
 	private void findColumns() {
 		
 		for(OrderByElement o:arguments) {
-			Column column = (Column) o.getExpression();
+			String columnName = o.getExpression().toString();
 			
 			for(int i=0; i<schema.getColumns().size(); i++) {
-				if(schema.getColumns().get(i).getColumnName().equalsIgnoreCase(column.getWholeColumnName())
-						|| schema.getColumns().get(i).getWholeColumnName().equalsIgnoreCase(column.getWholeColumnName())) {
+				if(schema.getColumns().get(i).getColumnName().indexOf(columnName) >= 0) {
 					
 					columnIndexes.put(o, i);
 					break;
