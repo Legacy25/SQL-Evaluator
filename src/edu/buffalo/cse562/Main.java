@@ -10,6 +10,8 @@
 package edu.buffalo.cse562;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 
 import edu.buffalo.cse562.operators.Operator;
@@ -20,7 +22,8 @@ public class Main {
 	 * Stores the swap directory
 	 * Need application-wide access to this, so a static global
 	 */
-	public static File swapDirectory;
+	public static File swapDirectory = null;
+	public static int fileUUID = 0;
 	
 	/*
 	 * Provides application wide access to information 
@@ -71,6 +74,16 @@ public class Main {
 			}
 		}
 		
+		if(swapDirectory != null) {
+			for(File f:swapDirectory.listFiles()) {
+				try {
+					Files.deleteIfExists(f.toPath());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
 		/* 
 		 * Keep track of query time locally.
 		 * This code should be commented out before
@@ -97,7 +110,7 @@ public class Main {
 			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
 		}
 		
-//		long generateTime = System.nanoTime();
+		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		for(int i=0; i< parseTreeList.size(); i++) {
@@ -115,7 +128,7 @@ public class Main {
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-//		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

@@ -139,6 +139,7 @@ public class SortMergeJoinOperator implements Operator {
 		child2.initialize();
 
 		buildSchema();
+		generateSchemaName();
 		
 		prev1 = child1.readOneTuple();
 		prev2 = child2.readOneTuple();

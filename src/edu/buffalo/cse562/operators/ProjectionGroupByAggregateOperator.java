@@ -365,7 +365,7 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 						col.setColumnName(sei.getAlias());
 					}
 					
-					col.setColumnType("double");		// Assume all functions compute double answers
+					col.setColumnType("decimal");		// Assume all functions compute double answers
 					schema.addColumn(col);
 				}
 				else if (expr instanceof Column){
