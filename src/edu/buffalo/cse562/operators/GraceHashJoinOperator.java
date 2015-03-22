@@ -124,7 +124,7 @@ public class GraceHashJoinOperator implements Operator {
 		
 	}
 	
-	public void getSelectedColumns() {
+	private void getSelectedColumns() {
 		
 		ArrayList<Expression> clauseList = new ArrayList<Expression>();
 		
@@ -164,7 +164,7 @@ public class GraceHashJoinOperator implements Operator {
 		return -1;
 	}
 
-	public void buildHash(){
+	private void buildHash(){
 		
 		LeafValue[] next;
 
@@ -205,7 +205,7 @@ public class GraceHashJoinOperator implements Operator {
 		return next;
 	}
 	
-	public void buildJoin(){
+	private void buildJoin(){
 		
 		LeafValue[] next = null;
 		

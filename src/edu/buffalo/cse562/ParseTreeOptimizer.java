@@ -14,6 +14,7 @@ import edu.buffalo.cse562.operators.GraceHashJoinOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.OrderByOperator;
 import edu.buffalo.cse562.operators.SelectionOperator;
+import edu.buffalo.cse562.operators.SortMergeJoinOperator;
 import edu.buffalo.cse562.schema.Schema;
 
 public class ParseTreeOptimizer {
@@ -47,9 +48,9 @@ public class ParseTreeOptimizer {
 		/* Reorder Cross Products to facilitate more joins */
 		parseTree = reOrderCrossProducts(parseTree);
 				
-//		if(Main.memoryLimitsOn) {
-//			parseTree = optimizeMemory(parseTree);
-//		}
+		if(Main.memoryLimitsOn) {
+			parseTree = optimizeMemory(parseTree);
+		}
 		
 		/* Other Patterns go here */
 		
@@ -145,34 +146,32 @@ public class ParseTreeOptimizer {
 
 	/* Pushing down Selects through Cross Products - helper methods */
 
-//	private static Operator optimizeMemory(Operator parseTree) {
-//		
-//		/* Find memory blocking operator patters and
-//		 * replace with non-blocking equivalent patterns
-//		 */
-//		
-//		if(parseTree == null) {
-//			return null;
-//		}
-//		
-//		/* The simplest pattern, replace normal order by with 
-//		 * memory bounded order by
-//		 */
-//		if(parseTree instanceof OrderByOperator) {
-//			parseTree = new ExternalSortOperator((OrderByOperator) parseTree);
-//		}
-//		
-//		/* Joins and Group By patterns go here */
-//		
-//		
-//		
-//		/* Recursively travers the tree top down */
-//		parseTree.setLeft(optimizeMemory(parseTree.getLeft()));
-//		parseTree.setRight(optimizeMemory(parseTree.getRight()));
-//		
-//		return parseTree;
-//	
-//	}
+	private static Operator optimizeMemory(Operator parseTree) {
+		
+		/* Find memory blocking operator patters and
+		 * replace with non-blocking equivalent patterns
+		 */
+		
+		if(parseTree == null) {
+			return null;
+		}
+		
+		if(parseTree instanceof GraceHashJoinOperator) {
+			parseTree = new SortMergeJoinOperator(((GraceHashJoinOperator) parseTree));
+		}
+		
+		if(parseTree instanceof OrderByOperator) {
+		parseTree = new ExternalSortOperator((OrderByOperator) parseTree);
+		}
+		
+		
+		/* Recursively traverse the tree top down */
+		parseTree.setLeft(optimizeMemory(parseTree.getLeft()));
+		parseTree.setRight(optimizeMemory(parseTree.getRight()));
+		
+		return parseTree;
+	
+	}
 
 	private static ClauseApplicability checkClauseApplicability(
 			Schema left, Schema right, Expression clause

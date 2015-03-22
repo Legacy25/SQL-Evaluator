@@ -47,7 +47,8 @@ public class LeafValueComparator implements Comparator<LeafValue[]> {
 			String columnName = o.getExpression().toString();
 			
 			for(int i=0; i<schema.getColumns().size(); i++) {
-				if(schema.getColumns().get(i).getColumnName().indexOf(columnName) >= 0) {
+				if(schema.getColumns().get(i).getColumnName().toLowerCase().indexOf(columnName.toLowerCase()) >= 0
+						|| columnName.toLowerCase().indexOf(schema.getColumns().get(i).getColumnName().toLowerCase()) >= 0) {
 					
 					columnIndexes.put(o, i);
 					break;
