@@ -93,25 +93,24 @@ public class Main {
 		}
 		
 		/* Optimize each parse-tree */
-		Iterator<Operator> i = parseTreeList.iterator();
-		while(i.hasNext()) {
-			Operator parseTree = i.next();
-			ParseTreeOptimizer.optimize(parseTree);
-			
-			/* DEBUG */
-			/* Show the optimized Query Plan */
-//			System.err.println(
-//					"Optimized:\n\n" +
-//					parseTree.getSchema()
-//					);
+		for(int i=0; i< parseTreeList.size(); i++) {
+			Operator parseTree = parseTreeList.get(i);
+			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
 		}
 		
 //		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
-		i = parseTreeList.iterator();
-		while(i.hasNext()) {
-			ParseTreeEvaluator.evaluate(i.next());
+		for(int i=0; i< parseTreeList.size(); i++) {
+			
+			/* DEBUG */
+			/* Show the optimized Query Plan */
+//			System.err.println(
+//					"Optimized:\n\n" +
+//					parseTreeList.get(i).getSchema()
+//					);
+			
+			ParseTreeEvaluator.evaluate(parseTreeList.get(i));
 		}
 		
 		/* DEBUG */

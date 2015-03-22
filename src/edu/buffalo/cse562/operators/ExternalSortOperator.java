@@ -31,11 +31,21 @@ public class ExternalSortOperator implements Operator {
 	public ExternalSortOperator(ArrayList<OrderByElement> arguments, Operator child) {
 		this.arguments = arguments;
 		this.child = child;
+		
+		schema = new Schema(child.getSchema());
+		
+		/* Set an appropriate table name, for book-keeping */
+		generateSchemaName();
 	}
 	
 	public ExternalSortOperator(OrderByOperator o) {
 		this.arguments = o.getArguments();
 		this.child = o.getLeft();
+		
+		schema = new Schema(child.getSchema());
+		
+		/* Set an appropriate table name, for book-keeping */
+		generateSchemaName();
 	}
 	
 	@Override
@@ -46,7 +56,7 @@ public class ExternalSortOperator implements Operator {
 	@Override
 	public void generateSchemaName() {
 		child.generateSchemaName();
-		schema.setTableName("O(" + child.getSchema().getTableName() + ")");
+		schema.setTableName("O{ext} (" + child.getSchema().getTableName() + ")");
 	}
 
 	@Override
