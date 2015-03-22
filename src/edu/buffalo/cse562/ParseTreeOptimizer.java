@@ -50,9 +50,9 @@ public class ParseTreeOptimizer {
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
 		
-//		if(Main.memoryLimitsOn) {
-//			parseTree = optimizeMemory(parseTree);
-//		}
+		if(Main.memoryLimitsOn) {
+			parseTree = optimizeMemory(parseTree);
+		}
 		
 		/* Other Patterns go here */
 		
@@ -461,32 +461,6 @@ public class ParseTreeOptimizer {
 		return parseTree;
 	}
 	
-	
-	
-	
-	
-//	private static boolean consistent(Expression clause,
-//			ArrayList<Expression> joinPredicates) {
-//
-//		if(joinPredicates.isEmpty())
-//			return true;
-//		
-//		HashSet<String> joinTables = new HashSet<String>();
-//		BinaryExpression firstPredicate = (BinaryExpression) joinPredicates.get(0);
-//		BinaryExpression bClause = (BinaryExpression) clause;
-//		
-//		joinTables.add(((Column) firstPredicate.getLeftExpression()).getTable().getWholeTableName());
-//		joinTables.add(((Column) firstPredicate.getRightExpression()).getTable().getWholeTableName());
-//		
-//		if(joinTables.contains(((Column) bClause.getLeftExpression()).getTable().getWholeTableName())
-//				&&
-//				joinTables.contains(((Column) bClause.getRightExpression()).getTable().getWholeTableName())
-//				)
-//			return true;
-//		
-//		return false;
-//	}
-
 	public static ArrayList<Expression> splitAndClauses(Expression e) {
 	  
 		ArrayList<Expression> ret = new ArrayList<Expression>();
