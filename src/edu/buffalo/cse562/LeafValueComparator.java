@@ -11,7 +11,6 @@ import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 
 public class LeafValueComparator implements Comparator<LeafValue[]> {
