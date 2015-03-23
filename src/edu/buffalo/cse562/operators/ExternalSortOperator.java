@@ -9,14 +9,10 @@ import edu.buffalo.cse562.schema.Schema;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -53,9 +49,10 @@ public class ExternalSortOperator implements Operator {
 
 	/* For book-keeping	 */
 	private HashMap<Integer, String> tempFileMap;
-	private HashMap<Integer, String> finalFileMap;
 	private ArrayList<BufferedReader> filePointers;
+	private String outputFileName;
 
+	private boolean newlineFlag = false;
 	
 	/* Maximum number of rows at a time in memory, i.e. maximum rows in a swap file*/
 	private int maxRows;
@@ -78,7 +75,6 @@ public class ExternalSortOperator implements Operator {
 
 		tempList = new ArrayList<LeafValue[]>();
 		tempFileMap = new HashMap<Integer, String>();
-		finalFileMap = new HashMap<Integer, String>();
 		filePointers = new ArrayList<BufferedReader>();
 
 		br = null;
@@ -104,18 +100,16 @@ public class ExternalSortOperator implements Operator {
 		generateSchemaName();
 		
 		lvc = new LeafValueComparator(arguments, schema);
+		outputFileName = Integer.valueOf(Main.fileUUID++).toString()+"_output";
 		
 		partitionAndSortData();
 		
-		System.gc();
-
 		try {
 			mergeSortedPartitions();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		System.gc();
 	}
 
 	private void partitionAndSortData() {
@@ -138,8 +132,7 @@ public class ExternalSortOperator implements Operator {
 				
 				fileName = Integer.valueOf(Main.fileUUID++).toString()
 						+ "_block_"
-						+ counter
-						+ ".txt";
+						+ counter;
 				
 				BufferedWriter bw = null;
 				
@@ -198,7 +191,7 @@ public class ExternalSortOperator implements Operator {
 		return row.substring(0, row.length() - 1);
 	}
 
-	public LeafValue[] unSerializeTuple(String row) {
+	private LeafValue[] unSerializeTuple(String row) {
 		
 		String tokens[] = row.split("\\|");
 		String type = "";
@@ -237,52 +230,117 @@ public class ExternalSortOperator implements Operator {
 		return tuple;
 	}
 
-	public void mergeSortedPartitions() throws IOException {
+	private void mergeSortedPartitions() throws IOException {
 		
-		BufferedReader br1 = null, br2 = null;
-		int fileMapCounter = 0, round = 0;
-		HashMap<Integer, String> tempFileMap1 = new HashMap<Integer, String>();
-		String filePrefix = "";
+		openFilePointers();
 		
-		while (tempFileMap.size() > 1) {
-
-			openFilePointers();
-			for (int i=0;i<tempFileMap.size();i+=2) {
-				br1 = filePointers.get(i);
-				filePrefix += i;
-
-				if (((i+1) < tempFileMap.size()) && (filePointers.get(i+1) != null)) {
-					br2 = filePointers.get(i+1);
-					filePrefix += i+1;
-				}
-
-				merge(br1,br2, tempFileMap1, filePrefix,round, fileMapCounter++);
-				filePrefix = "";
-
-			}
-
-			tempFileMap.clear();
-			fileMapCounter = 0;
-			
-			for (int k=0;k<tempFileMap1.size();k++) {
-				tempFileMap.put(k, tempFileMap1.get(k));
-			}
-			
-			tempFileMap1.clear();
-			round++;
-			
-			closeFilePointers();
+		LeafValue[][] tempList = new LeafValue[filePointers.size()][];
+		ArrayList<LeafValue[]> outputBuffer = new ArrayList<LeafValue[]>();
+		
+		int finished = 0;
+		
+		for(int i=0; i<filePointers.size(); i++) {
+			tempList[i] = unSerializeTuple(filePointers.get(i).readLine());
 		}
 		
-		finalFileMap = tempFileMap;
+		while(finished < filePointers.size()) {
+			int minPos = findMinTuple(tempList);
+			
+			outputBuffer.add(tempList[minPos]);
+			
+			String nextRow = filePointers.get(minPos).readLine();
+			if(nextRow == null) {
+				finished++;
+				tempList[minPos] = null;
+			}
+			else {
+				tempList[minPos] = unSerializeTuple(nextRow);
+			}
+			
+			if(outputBuffer.size() == maxRows) {
+				flush(outputBuffer);
+				outputBuffer.clear();
+			}
+		}
+
+		flush(outputBuffer);
+		outputBuffer.clear();
+		
+		closeFilePointers();
 		
 	}
 
-	public void openFilePointers() {
+	private void flush(ArrayList<LeafValue[]> outputBuffer) {
+
+		BufferedWriter bw = null;
+		
+		try {
+			bw = new BufferedWriter(
+					new FileWriter(
+							new File(Main.swapDirectory, outputFileName), true
+							)
+					);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		if(newlineFlag) {
+			try {
+				bw.write("\n");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		for(int i=0; i<outputBuffer.size(); i++) {
+			String tuple = serializeTuple(outputBuffer.get(i));
+			try {
+				bw.write(i == outputBuffer.size() - 1 ? tuple : tuple + "\n");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		if(!newlineFlag) {
+			newlineFlag = true;
+		}
+		
+		try {
+			bw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private int findMinTuple(LeafValue[][] list) {
+		
+		int minPos = -1;
+		
+		LeafValue[] min = list[0];
+		if(min != null)
+			minPos = 0;
+		
+		for(int i=0; i<list.length; i++) {
+			if(min == null && list[i] != null) {
+				min = list[i];
+				minPos = i;
+			}
+			else if(min != null && list[i] != null) {
+				if(lvc.compare(min, list[i]) > 0) {
+					min = list[i];
+					minPos = i;
+				}
+			}
+		}
+		
+		return minPos;
+	}
+
+	private void openFilePointers() {
 
 		for (int i=0; i<tempFileMap.size(); i++) {
 			try {
-				br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(Main.swapDirectory, tempFileMap.get(i)))));
+				br = new BufferedReader(new FileReader(new File(Main.swapDirectory, tempFileMap.get(i))));
 				filePointers.add(br);
 				br = null;
 			} catch (FileNotFoundException e) {
@@ -291,7 +349,7 @@ public class ExternalSortOperator implements Operator {
 		}
 	}
 
-	public void closeFilePointers() {
+	private void closeFilePointers() {
 		
 		for (int i=0; i<filePointers.size(); i++) {
 			try {
@@ -304,112 +362,16 @@ public class ExternalSortOperator implements Operator {
 		filePointers.clear();
 	}
 
-	public void merge(BufferedReader br1, BufferedReader br2, HashMap<Integer, String> tempFileMap_1, String filePrefix, int round, int fileMapCounter2) throws IOException {
-		
-		ArrayList<LeafValue[]> tempBuffer = new ArrayList<LeafValue[]>();
-		int fileMapCounter = 0, result = 0;
-		
-		String temp1, temp2 = null;
-		BufferedWriter bw = null;
-		
-		String fileName = "/"+ Main.fileUUID +"_part_" + filePrefix + "_" + round + ".txt";
-		bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(Main.swapDirectory, fileName))));
-		temp1 = br1.readLine();
 
-		if (br2 == null) {
-			while (temp1 != null) {
-				tempBuffer.add(unSerializeTuple(temp1));
-				temp1 = br1.readLine();
-				if (tempBuffer.size() == maxRows || temp1 == null) {
-					flushToDisk(tempBuffer, fileMapCounter++, bw);
-					tempBuffer.clear();
-				}
-			}
-			return;
-		} 
-		
-		if (br2 != null) {
-			temp2 = br2.readLine();
-		}
-		
-		while (!(temp1 == null && temp2 == null)) {
-			if (temp1 == null) {
-				while (temp2 != null) {
-					tempBuffer.add(unSerializeTuple(temp2));
-					temp2 = br2.readLine();
-					if (tempBuffer.size() == maxRows || temp2 == null) {
-						flushToDisk(tempBuffer, fileMapCounter++, bw);
-						tempBuffer.clear();
-					}
-				}
-			}
-			
-			if (temp2 == null) {
-				while (temp1 != null) {
-					tempBuffer.add(unSerializeTuple(temp1));
-					temp1 = br1.readLine();
-					if (tempBuffer.size() == maxRows || temp1 == null) {
-						flushToDisk(tempBuffer, fileMapCounter++, bw);
-						tempBuffer.clear();
-					}
-				}
-			}
-			
-			if (temp1 != null && temp2 != null) {
-				result = compareTuples(temp1, temp2);
-				
-				if (result <= 0) {
-					tempBuffer.add(unSerializeTuple(temp1));
-					temp1 = br1.readLine();
-				}
-				else if (result > 0) {
-					tempBuffer.add(unSerializeTuple(temp2));
-					temp2 = br2.readLine();
-				}
-				
-				if (tempBuffer.size() == maxRows || temp1 == null || temp2 == null) {
-					flushToDisk(tempBuffer, fileMapCounter++, bw);
-					tempBuffer.clear();
-				}
-			}
-			
-		}
-
-
-		bw.close();
-		tempFileMap_1.put(fileMapCounter2, fileName);
-	}
-
-	public int compareTuples(String temp1, String temp2) {
-		
-		LeafValue[] o1 = unSerializeTuple(temp1);
-		LeafValue[] o2 = unSerializeTuple(temp2);
-		
-		return lvc.compare(o1, o2);
-		
-	}
-
-	private void flushToDisk(ArrayList<LeafValue[]> tempBuffer, int fileMapCounter, BufferedWriter bw) throws IOException {
-
-		String tuple = "";
-		
-		Iterator<LeafValue[]> i = tempBuffer.iterator();
-		while (i.hasNext()) {
-			LeafValue[] lv = i.next();
-			tuple = serializeTuple(lv) + "\n";
-			bw.write(tuple);
-		}
-	}
+	
 	
 	@Override
 	public LeafValue[] readOneTuple() {
-		String fileName = "";
 		String row = "";
 		
 		if (br == null) {
-			fileName = finalFileMap.get(0);
 			try {
-				br = new BufferedReader(new FileReader(new File(Main.swapDirectory, fileName)));
+				br = new BufferedReader(new FileReader(new File(Main.swapDirectory, outputFileName)));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
