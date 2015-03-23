@@ -13,6 +13,7 @@ import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.OrderByElement;
+import edu.buffalo.cse562.LeafValueComparator;
 import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
@@ -31,6 +32,8 @@ public class SortMergeJoinOperator implements Operator {
 	
 	
 	LeafValue[] next1, next2, prev1, prev2;
+	ArrayList<LeafValue[]> temp1, temp2, tempList;
+	LeafValueComparator lvc1, lvc2;
 
 	public SortMergeJoinOperator(GraceHashJoinOperator ghjOp) {
 		this.where = ghjOp.getWhere();
@@ -44,6 +47,10 @@ public class SortMergeJoinOperator implements Operator {
 		
 		this.child1 = new OrderByOperator(arguments1, child1);
 		this.child2 = new OrderByOperator(arguments2, child2);
+		
+		temp1 = new ArrayList<LeafValue[]>();
+		temp2 = new ArrayList<LeafValue[]>();
+		tempList = new ArrayList<LeafValue[]>();
 		
 		buildSchema();
 	}
@@ -141,6 +148,9 @@ public class SortMergeJoinOperator implements Operator {
 		buildSchema();
 		generateSchemaName();
 		
+		lvc1 = new LeafValueComparator(arguments1, child1.getSchema());
+		lvc2 = new LeafValueComparator(arguments2, child2.getSchema());
+		
 		prev1 = child1.readOneTuple();
 		prev2 = child2.readOneTuple();
 		
@@ -153,16 +163,56 @@ public class SortMergeJoinOperator implements Operator {
 		
 		LeafValue[] ret = null;
 		
+		if(tempList.size() > 0) {
+			ret = tempList.get(tempList.size() - 1);
+			tempList.remove(tempList.size() - 1);
+			
+			return ret;
+		}
+		
+		temp1.clear();
+		temp2.clear();
+		
 		while(prev1 != null && prev2!= null) {
 			int prev1prev2Comp = compare(prev1, prev2);
 			if(prev1prev2Comp == 0) {
 				ret = joinAndEmit(prev1, prev2);
 				
-				if(next1 != null && compare(next1, prev2) == 0) {
+				boolean cond1 = next1 != null && compare(next1, prev2) == 0;
+				boolean cond2 = next2 != null && compare(prev1, next2) == 0;
+				
+				if(cond1 && cond2) {
+					while(prev1 != null && lvc1.compare(prev1, next1) == 0) {
+						temp1.add(prev1);
+						prev1 = next1;
+						next1 = child1.readOneTuple();
+					}
+					temp1.add(prev1);
+					prev1 = next1;
+					next1 = child1.readOneTuple();
+					
+					while(prev2 != null && lvc2.compare(prev2, next2) == 0) {
+						temp2.add(prev2);
+						prev2 = next2;
+						next2 = child2.readOneTuple();
+					}
+					temp2.add(prev2);
+					prev2 = next2;
+					next2 = child2.readOneTuple();
+					
+					for(int i=0; i<temp1.size(); i++) {
+						for(int j=0; j<temp2.size(); j++) {
+							if(i == 0 && j == 0)
+								continue;
+							tempList.add(joinAndEmit(temp1.get(i), temp2.get(j)));
+						}
+					}
+				}
+				else if(cond1) {
 					prev1 = next1;
 					next1 = child1.readOneTuple();
 				}
-				else if(next2 != null && compare(next2, prev1) == 0) {
+				else if(cond2) {
 					prev2 = next2;
 					next2 = child2.readOneTuple();
 				}
@@ -228,6 +278,18 @@ public class SortMergeJoinOperator implements Operator {
 			
 			switch(type) {
 			case "int":
+				try {
+					if(left[pos1].toLong() == right[pos2].toLong())
+						continue;
+					if(left[pos1].toLong() > right[pos2].toLong()) {
+						return 1;
+					}
+					else {
+						return -1;
+					}
+				} catch (InvalidLeaf e) {
+					break;
+				}
 			case "decimal":
 				try {
 					if(left[pos1].toDouble() == right[pos2].toDouble())

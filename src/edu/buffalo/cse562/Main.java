@@ -71,7 +71,7 @@ public class Main {
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
-				if(args[i].contains("10")) {
+				if(args[i].contains("10") && swapDirectory != null) {
 					memoryLimitsOn = true;
 				}
 			}

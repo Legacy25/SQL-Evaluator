@@ -1,7 +1,5 @@
 package edu.buffalo.cse562.operators;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 import net.sf.jsqlparser.expression.LeafValue;

@@ -1,3 +1,4 @@
 CREATE TABLE R ( A int, B int );
+CREATE TABLE S ( B int, C int );
 
-SELECT * FROM R ORDER BY R.A;
+SELECT * FROM R,S WHERE R.B = S.B;
