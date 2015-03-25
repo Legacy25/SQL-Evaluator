@@ -71,13 +71,14 @@ public class Main {
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
-				if(args[i].contains("10") && swapDirectory != null) {
-					memoryLimitsOn = true;
-				}
+//				if(args[i].contains("10") && swapDirectory != null) {
+//					memoryLimitsOn = true;
+//				}
 			}
 		}
 		
 		if(swapDirectory != null) {
+			memoryLimitsOn = true;
 			for(File f:swapDirectory.listFiles()) {
 				try {
 					Files.deleteIfExists(f.toPath());
