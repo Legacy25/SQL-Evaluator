@@ -161,7 +161,7 @@ public class ParseTreeOptimizer {
 		}
 		
 		if(parseTree instanceof OrderByOperator) {
-			parseTree = new ExternalSortOperator((OrderByOperator) parseTree, 30000);
+			parseTree = new ExternalSortOperator((OrderByOperator) parseTree, 50000);
 		}
 		
 		
