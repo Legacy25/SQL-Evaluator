@@ -14,10 +14,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.PriorityQueue;
 
 import edu.buffalo.cse562.LeafValueComparator;
 import edu.buffalo.cse562.Main;
@@ -180,19 +178,17 @@ public class ExternalSortOperator implements Operator {
 
 	private String serializeTuple(LeafValue[] leafvalue) {
 		
-		if(leafvalue.length == 0) {
-			/* Should never happen, but just in case */
-			return "";
+		String row = "";
+		
+		for (int i=0; i<leafvalue.length; i++) {
+			String temp = leafvalue[i].toString();
+			if(temp.startsWith("\'") && temp.endsWith("\'")) {
+				temp = temp.substring(1, temp.length() - 1);
+			}
+			row += temp + "|";
 		}
 		
-		String row = leafvalue[0].toString();
-		String seperator = "|";
-		
-		for (int i=1; i<leafvalue.length; i++) {
-			row = row.concat(seperator).concat(leafvalue[i].toString());
-		}
-		
-		return row;
+		return row.substring(0, row.length() - 1);
 	}
 
 	private LeafValue[] unSerializeTuple(String row) {
@@ -219,7 +215,7 @@ public class ExternalSortOperator implements Operator {
 			case "varchar":
 			case "string":
 				/* Blank spaces are appended to account for JSQLParser's weirdness */
-				tuple[i] = new StringValue(tokens[i]);
+				tuple[i] = new StringValue(" "+tokens[i]+" ");
 				break;
 
 			case "date":
@@ -233,67 +229,32 @@ public class ExternalSortOperator implements Operator {
 		}
 		return tuple;
 	}
-	
-	private class FileNextTuple {
-		
-		public LeafValue[] tuple;
-		public int filePointer;
-		
-		public FileNextTuple(LeafValue[] tuple, int filePointer) {
-			this.tuple = tuple;
-			this.filePointer = filePointer;
-		}
-		
-	}
-	
-	private class FileNextTupleComparator implements Comparator<FileNextTuple> {
 
-		private LeafValueComparator lvc;
-		
-		public FileNextTupleComparator(LeafValueComparator lvc) {
-			this.lvc = lvc;
-		}
-		
-		@Override
-		public int compare(FileNextTuple o1, FileNextTuple o2) {
-			return lvc.compare(o1.tuple, o2.tuple);
-		}
-		
-	}
-	
 	private void mergeSortedPartitions() throws IOException {
 		
 		openFilePointers();
 		
-		PriorityQueue<FileNextTuple> pq = 
-				new PriorityQueue<ExternalSortOperator.FileNextTuple>(
-						filePointers.size() ,
-						new FileNextTupleComparator(lvc)
-						);
-		
+		LeafValue[][] tempList = new LeafValue[filePointers.size()][];
 		ArrayList<LeafValue[]> outputBuffer = new ArrayList<LeafValue[]>();
 		
 		int finished = 0;
 		
 		for(int i=0; i<filePointers.size(); i++) {
-			LeafValue[] lv = unSerializeTuple(filePointers.get(i).readLine());
-			FileNextTuple fnt = new FileNextTuple(lv, i);
-			
-			pq.add(fnt);
+			tempList[i] = unSerializeTuple(filePointers.get(i).readLine());
 		}
 		
 		while(finished < filePointers.size()) {
-
-			FileNextTuple fnt = pq.poll();
+			int minPos = findMinTuple(tempList);
 			
-			outputBuffer.add(fnt.tuple);
+			outputBuffer.add(tempList[minPos]);
 			
-			String nextRow = filePointers.get(fnt.filePointer).readLine();
+			String nextRow = filePointers.get(minPos).readLine();
 			if(nextRow == null) {
 				finished++;
+				tempList[minPos] = null;
 			}
 			else {
-				pq.add(new FileNextTuple(unSerializeTuple(nextRow), fnt.filePointer));
+				tempList[minPos] = unSerializeTuple(nextRow);
 			}
 			
 			if(outputBuffer.size() == maxRows) {
@@ -349,6 +310,30 @@ public class ExternalSortOperator implements Operator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private int findMinTuple(LeafValue[][] list) {
+		
+		int minPos = -1;
+		
+		LeafValue[] min = list[0];
+		if(min != null)
+			minPos = 0;
+		
+		for(int i=0; i<list.length; i++) {
+			if(min == null && list[i] != null) {
+				min = list[i];
+				minPos = i;
+			}
+			else if(min != null && list[i] != null) {
+				if(lvc.compare(min, list[i]) > 0) {
+					min = list[i];
+					minPos = i;
+				}
+			}
+		}
+		
+		return minPos;
 	}
 
 	private void openFilePointers() {
