@@ -18,6 +18,7 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
@@ -158,6 +159,11 @@ public class ProjectionOperator extends Eval implements Operator {
 					}
 				}
 			}
+			else if(si instanceof AllColumns) {
+				for(ColumnWithType c : childSchema.getColumns()) {
+					schema.addColumn(c);
+				}
+			}
 			else {
 				System.err.println("Unrecognized SelectItem)");
 			}
@@ -237,6 +243,12 @@ public class ProjectionOperator extends Eval implements Operator {
 				
 				k--;
 			}
+			
+			else if(si instanceof AllColumns) {
+				ret = next;
+				k += ret.length;
+			}
+			
 			else {
 				System.err.println("Unrecognized SelectItem");
 			}
@@ -321,6 +333,10 @@ public class ProjectionOperator extends Eval implements Operator {
 	@Override
 	public void setRight(Operator o) {
 
+	}
+	
+	public List<SelectItem> getSelectItems() {
+		return selectItems;
 	}
 	
 }

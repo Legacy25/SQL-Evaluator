@@ -1,18 +1,33 @@
 package edu.buffalo.cse562;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.AllColumns;
+import net.sf.jsqlparser.statement.select.AllTableColumns;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import edu.buffalo.cse562.operators.CrossProductOperator;
 import edu.buffalo.cse562.operators.ExternalSortOperator;
 import edu.buffalo.cse562.operators.GraceHashJoinOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.OrderByOperator;
+import edu.buffalo.cse562.operators.ProjectScanOperator;
+import edu.buffalo.cse562.operators.ProjectionGroupByAggregateOperator;
+import edu.buffalo.cse562.operators.ProjectionOperator;
+import edu.buffalo.cse562.operators.ScanOperator;
 import edu.buffalo.cse562.operators.SelectionOperator;
 import edu.buffalo.cse562.operators.SortMergeJoinOperator;
 import edu.buffalo.cse562.schema.Schema;
@@ -22,6 +37,16 @@ public class ParseTreeOptimizer {
 	private enum ClauseApplicability {
 		ROOT, LEFT, RIGHT, INVALID;
 	}
+	
+	
+	private static Pattern p = Pattern.compile("[a-zA-Z.]+");
+	private static ArrayList<Schema> schemas = ParseTreeGenerator.getTableSchemas();
+	
+	private static String[] keywords = {
+		"sum", "avg", "count", "min", "max", 
+		"case", "when", "and", "or", "then", "else", "end",
+		"urgent", "high"
+	};
 	
 	/* 
 	 * The entry-point to the optimizer,
@@ -38,6 +63,10 @@ public class ParseTreeOptimizer {
 		/*
 		 * Query plan rewrites for faster evaluation
 		 */
+		
+		/* Push down projections */
+		if(!(parseTree instanceof ScanOperator))
+			parseTree = pushDownProjections(parseTree);
 		
 		/* Decompose Select Clauses and push them down appropriately */
 		parseTree = initialSelectionDecomposition(parseTree);
@@ -61,6 +90,149 @@ public class ParseTreeOptimizer {
 		
 	}
 	
+	private static Operator pushDownProjections(Operator parseTree) {
+		
+		HashSet<String> projections = new HashSet<String>();
+		projections.addAll(findProjectedColumns(parseTree, projections));
+		parseTree = projectOutUnnecessaryColumns(parseTree, projections);
+		
+		return parseTree;
+	}
+
+	private static Operator projectOutUnnecessaryColumns(Operator parseTree,
+			HashSet<String> projections) {
+		
+		if(parseTree == null)
+			return null;
+		
+		if(parseTree instanceof ScanOperator) {
+			parseTree = new ProjectScanOperator(parseTree.getSchema(), projections);
+		}
+		
+		parseTree.setLeft(projectOutUnnecessaryColumns(parseTree.getLeft(), projections));
+		parseTree.setRight(projectOutUnnecessaryColumns(parseTree.getRight(), projections));
+		
+		return parseTree;
+	}
+
+	private static HashSet<String> findProjectedColumns(
+			Operator parseTree, HashSet<String> projections) {
+		
+		if(parseTree == null)
+			return projections;
+		
+		if(parseTree instanceof ProjectionGroupByAggregateOperator
+				|| parseTree instanceof ProjectionOperator) {
+			
+			List<SelectItem> selectItems = null;
+			
+			if(parseTree instanceof ProjectionGroupByAggregateOperator) {
+
+				ProjectionGroupByAggregateOperator po = 
+						(ProjectionGroupByAggregateOperator) parseTree;
+				
+				selectItems = po.getSelectItems();
+			}
+			else {
+				ProjectionOperator po = 
+						(ProjectionOperator) parseTree;
+				
+				selectItems = po.getSelectItems();
+			}
+			
+			Iterator<SelectItem> i = selectItems.iterator();
+			
+			while(i.hasNext()) {
+				SelectItem si = i.next();
+				if(si instanceof SelectExpressionItem) {
+					
+					SelectExpressionItem sei = (SelectExpressionItem) si;
+					Expression expr = sei.getExpression();
+					
+					if(expr instanceof Function) {
+						Matcher m = p.matcher(expr.toString());
+						
+						while(m.find()) {
+							String res = m.group();
+							if(!isAKeyWord(res)) {
+								if(res.contains("."))
+									res = res.split("\\.")[1];
+
+								projections.add(res.toLowerCase());
+							}
+						}
+					}
+					else if (expr instanceof Column){
+						projections.add(((Column) expr).getColumnName().toLowerCase());
+					}
+				}
+				
+				else if(si instanceof AllTableColumns) {
+					AllTableColumns atc = (AllTableColumns) si;
+					Table t = atc.getTable();
+
+					for(Schema s:schemas) {
+						if(s.getTableName().equalsIgnoreCase(t.getName())) {
+							for(Column c : s.getColumns()) {
+								projections.add(c.getColumnName().toLowerCase());
+							}
+							break;
+						}
+					}
+				}
+				else if(si instanceof AllColumns) {
+					for(Schema s:schemas) {
+						for(Column c : s.getColumns()) {
+							projections.add(c.getColumnName().toLowerCase());
+						}
+					}
+				}
+			}
+		}
+		else if (parseTree instanceof SelectionOperator) {
+			
+			SelectionOperator so = (SelectionOperator) parseTree;
+			Expression where = so.getWhere();
+			ArrayList<Expression> clauseList = splitAndClauses(where);
+			
+			for(Expression e:clauseList) {
+				ArrayList<Expression> orList = splitOrClauses(e);
+				
+				for(Expression clause:orList) {
+					
+					if(clause instanceof BinaryExpression) {
+						Expression left = ((BinaryExpression) clause).getLeftExpression();
+						Expression right = ((BinaryExpression) clause).getRightExpression();
+						
+						if(left instanceof Column) {
+							projections.add(((Column) left).getColumnName().toLowerCase());
+						}
+						
+						if(right instanceof Column) {
+							projections.add(((Column) right).getColumnName().toLowerCase());
+						}
+					}
+				}
+			}
+		}
+
+		/* Recursively traverse the tree top down */
+		projections.addAll(findProjectedColumns(parseTree.getLeft(), projections));
+		projections.addAll(findProjectedColumns(parseTree.getRight(), projections));
+		
+		return projections;
+	}
+
+	private static boolean isAKeyWord(String group) {
+
+		for(String s:keywords) {
+			if(group.equalsIgnoreCase(s))
+				return true;
+		}
+		
+		return false;
+	}
+
 	private static Operator reOrderCrossProducts(Operator parseTree) {
 		if(parseTree == null) {
 			return null;
@@ -161,7 +333,7 @@ public class ParseTreeOptimizer {
 		}
 		
 		if(parseTree instanceof OrderByOperator) {
-			parseTree = new ExternalSortOperator((OrderByOperator) parseTree, 30000);
+			parseTree = new ExternalSortOperator((OrderByOperator) parseTree, Main.BLOCK);
 		}
 		
 		

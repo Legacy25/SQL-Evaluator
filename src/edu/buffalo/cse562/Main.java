@@ -25,6 +25,8 @@ public class Main {
 	public static File swapDirectory = null;
 	public static int fileUUID = 0;
 	
+	public static int BLOCK = 10000;
+	
 	/*
 	 * Provides application wide access to information 
 	 * regarding whether there is a memory limit,
@@ -67,14 +69,14 @@ public class Main {
 			}
 			else if(args[i].equalsIgnoreCase("--swap")) {
 				swapDirectory = new File(args[i+1]);
-				memoryLimitsOn = true;
+//				memoryLimitsOn = true;
 				i++;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
-//				if(args[i].contains("10") && swapDirectory != null) {
-//					memoryLimitsOn = true;
-//				}
+				if(args[i].contains("10") && swapDirectory != null) {
+					memoryLimitsOn = true;
+				}
 			}
 		}
 		

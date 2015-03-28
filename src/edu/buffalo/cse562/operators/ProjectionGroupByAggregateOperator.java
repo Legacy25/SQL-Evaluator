@@ -540,6 +540,10 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 	public void setRight(Operator o) {
 
 	}
+	
+	public List<SelectItem> getSelectItems() {
+		return selectItems;
+	}
 
 	@Override
 	public void generateSchemaName() {

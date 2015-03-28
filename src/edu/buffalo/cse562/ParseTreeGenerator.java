@@ -393,13 +393,11 @@ public class ParseTreeGenerator {
 		 * Only use projection for non-aggregate queries
 		 */
 		if(!aggregateQuery && ps.getSelectItems() != null) {
-			if(!(ps.getSelectItems().get(0) instanceof AllColumns)) {
-				parseTree = 
-						new ProjectionOperator(
-								ps.getSelectItems() ,
-								parseTree
-						);
-			}
+			parseTree = 
+					new ProjectionOperator(
+							ps.getSelectItems() ,
+							parseTree
+					);
 		}
 		
 		
