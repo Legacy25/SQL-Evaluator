@@ -178,17 +178,18 @@ public class ExternalSortOperator implements Operator {
 
 	private String serializeTuple(LeafValue[] leafvalue) {
 		
-		String row = "";
+		if(leafvalue.length == 0)
+			return "";
 		
-		for (int i=0; i<leafvalue.length; i++) {
-			String temp = leafvalue[i].toString();
-			if(temp.startsWith("\'") && temp.endsWith("\'")) {
-				temp = temp.substring(1, temp.length() - 1);
-			}
-			row += temp + "|";
+		StringBuilder row = new StringBuilder(500);
+		row.append(leafvalue[0].toString());
+		
+		for(int i=1; i<leafvalue.length; i++) {
+			row.append('|');
+			row.append(leafvalue[i].toString());
 		}
 		
-		return row.substring(0, row.length() - 1);
+		return row.toString();
 	}
 
 	private LeafValue[] unSerializeTuple(String row) {
@@ -215,7 +216,7 @@ public class ExternalSortOperator implements Operator {
 			case "varchar":
 			case "string":
 				/* Blank spaces are appended to account for JSQLParser's weirdness */
-				tuple[i] = new StringValue(" "+tokens[i]+" ");
+				tuple[i] = new StringValue(tokens[i]);
 				break;
 
 			case "date":
@@ -258,6 +259,7 @@ public class ExternalSortOperator implements Operator {
 			}
 			
 			if(outputBuffer.size() == maxRows) {
+				
 				flush(outputBuffer);
 				outputBuffer.clear();
 			}

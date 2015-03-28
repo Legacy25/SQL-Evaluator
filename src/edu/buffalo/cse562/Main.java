@@ -67,13 +67,14 @@ public class Main {
 			}
 			else if(args[i].equalsIgnoreCase("--swap")) {
 				swapDirectory = new File(args[i+1]);
+				memoryLimitsOn = true;
 				i++;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
-				if(args[i].contains("10") && swapDirectory != null) {
-					memoryLimitsOn = true;
-				}
+//				if(args[i].contains("10") && swapDirectory != null) {
+//					memoryLimitsOn = true;
+//				}
 			}
 		}
 		
@@ -131,7 +132,7 @@ public class Main {
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-//		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+//		System.out.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }
