@@ -37,7 +37,8 @@ public class QueryPreprocessor {
 			BufferedReader br = new BufferedReader(new FileReader(new File(s.getTableFile())));
 			String[] tuple = null;
 			String line = null;
-		
+
+			Integer uid = 0;
 			
 			while( (line = br.readLine()) != null ) {
 				tuple = line.split("\\|");
@@ -62,8 +63,14 @@ public class QueryPreprocessor {
 						break;
 					}
 				}
-				
-				DatabaseEntry key = new DatabaseEntry(tuple[0].toString().getBytes());
+				DatabaseEntry key = null;
+				if(s.getTableName().equalsIgnoreCase("LINEITEM")) {
+					key = new DatabaseEntry(uid.toString().getBytes());
+					uid++;
+				}
+				else {
+					key = new DatabaseEntry(tuple[0].toString().getBytes());
+				}
 				DatabaseEntry val = new DatabaseEntry(out.toByteArray());
 				
 				table.put(null, key, val);

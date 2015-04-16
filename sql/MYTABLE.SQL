@@ -1,5 +1,5 @@
 CREATE TABLE R ( A int, B int );
 CREATE TABLE S ( B int, C int );
 
-SELECT S.C FROM R, S WHERE R.B = S.B;
+SELECT * FROM R;
 
