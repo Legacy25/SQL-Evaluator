@@ -42,7 +42,7 @@ public class Main {
 	public static boolean memoryLimitsOn = false;
 	public static boolean preprocessingOn = false;
 	
-	private static final File createTableStatementsFile = new File("schema.sql");
+	private static final String createTableStatementsFile = "schema.sql";
 	
 	
 	
@@ -119,7 +119,7 @@ public class Main {
 			
 			BufferedWriter bw = null;
 			try {
-				bw = new BufferedWriter(new FileWriter(createTableStatementsFile));
+				bw = new BufferedWriter(new FileWriter(indexDirectory+"//"+createTableStatementsFile));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -133,10 +133,16 @@ public class Main {
 				}
 			}
 			
+			try {
+				bw.flush();
+				bw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			return;
 		}
 		
-		sqlFiles.add(0, createTableStatementsFile);
+		sqlFiles.add(0, new File(indexDirectory+"//"+createTableStatementsFile));
 		
 		/* 
 		 * Keep track of query time locally.
