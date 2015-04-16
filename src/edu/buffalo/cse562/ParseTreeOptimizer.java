@@ -22,6 +22,7 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import edu.buffalo.cse562.operators.CrossProductOperator;
 import edu.buffalo.cse562.operators.ExternalSortOperator;
 import edu.buffalo.cse562.operators.GraceHashJoinOperator;
+import edu.buffalo.cse562.operators.IndexProjectScanOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.OrderByOperator;
 import edu.buffalo.cse562.operators.ProjectScanOperator;
@@ -106,7 +107,10 @@ public class ParseTreeOptimizer {
 			return null;
 		
 		if(parseTree instanceof ScanOperator) {
-			parseTree = new ProjectScanOperator(parseTree.getSchema(), projections);
+			if(Main.indexDirectory == null)
+				parseTree = new ProjectScanOperator(parseTree.getSchema(), projections);
+			else 
+				parseTree = new IndexProjectScanOperator(parseTree.getSchema(), projections);
 		}
 		
 		parseTree.setLeft(projectOutUnnecessaryColumns(parseTree.getLeft(), projections));

@@ -14,7 +14,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 
+
 import edu.buffalo.cse562.operators.Operator;
+import edu.buffalo.cse562.schema.Schema;
 
 public class Main {	
 	
@@ -23,6 +25,9 @@ public class Main {
 	 * Need application-wide access to this, so a static global
 	 */
 	public static File swapDirectory = null;
+	
+	public static File indexDirectory = null;
+	
 	public static int fileUUID = 0;
 	
 	public static int BLOCK = 10000;
@@ -34,6 +39,8 @@ public class Main {
 	 * in choosing non-blocking operators
 	 */
 	public static boolean memoryLimitsOn = false;
+	public static boolean preprocessingOn = false;
+	
 	
 	
 	
@@ -69,14 +76,18 @@ public class Main {
 			}
 			else if(args[i].equalsIgnoreCase("--swap")) {
 				swapDirectory = new File(args[i+1]);
-//				memoryLimitsOn = true;
+				memoryLimitsOn = true;
 				i++;
+			}
+			else if(args[i].equalsIgnoreCase("--db")) {
+				indexDirectory = new File(args[i+1]);
+				i++;
+			}
+			else if(args[i].equalsIgnoreCase("--load")) {
+				preprocessingOn = true;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
-				if(args[i].contains("10") && swapDirectory != null) {
-					memoryLimitsOn = true;
-				}
 			}
 		}
 		
@@ -88,6 +99,21 @@ public class Main {
 					e.printStackTrace();
 				}
 			}
+		}
+		
+		if(preprocessingOn) {
+			for(File f : sqlFiles) {
+				ParseTreeGenerator.generate(dataDirs, f);
+			}
+			
+			ArrayList<Schema> tables = ParseTreeGenerator.getTableSchemas();
+			
+			for(Schema s:tables) {
+				QueryPreprocessor.buildIndex(s);
+				System.err.println("Index built for "+s.getTableName());
+			}
+			
+			return;
 		}
 		
 		/* 
@@ -116,7 +142,7 @@ public class Main {
 			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
 		}
 		
-//		long generateTime = System.nanoTime();
+		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		for(int i=0; i< parseTreeList.size(); i++) {
@@ -134,7 +160,7 @@ public class Main {
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-//		System.out.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		System.out.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

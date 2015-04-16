@@ -80,4 +80,6 @@ bigdata
 middata
 testdata
 
-/bin/
+bin/
+swap/
+bdb/

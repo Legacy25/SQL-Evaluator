@@ -20,6 +20,7 @@ public class Schema {
 	private String tableName;
 	private String tableFile;
 	private ArrayList<ColumnWithType> columns;
+	private ArrayList<ColumnWithType> primaryKey;
 	
 	
 	public Schema(String tableName, String tableFile) {
@@ -28,15 +29,20 @@ public class Schema {
 		
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
+		primaryKey = new ArrayList<ColumnWithType>();
 	}
 	
 	public Schema(Schema schema) {
 		this.tableName = schema.tableName;
 		this.tableFile = schema.tableFile;
 		this.columns = new ArrayList<ColumnWithType>();
+		this.primaryKey = new ArrayList<ColumnWithType>();
 		
 		for(int i=0; i<schema.columns.size(); i++) {
 			columns.add(new ColumnWithType(schema.columns.get(i)));
+		}
+		for(int i=0; i<schema.primaryKey.size(); i++) {
+			primaryKey.add(new ColumnWithType(schema.primaryKey.get(i)));
 		}
 	}
 	
@@ -46,6 +52,7 @@ public class Schema {
 		
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
+		primaryKey = new ArrayList<ColumnWithType>();
 	}
 
 	
@@ -70,6 +77,10 @@ public class Schema {
 	public ArrayList<ColumnWithType> getColumns() {
 		return columns;
 	}
+	
+	public ArrayList<ColumnWithType> getPrimaryKey() {
+		return primaryKey;
+	}
 
 	public void addColumn(ColumnWithType column) {
 		this.columns.add(column);
@@ -79,6 +90,9 @@ public class Schema {
 		this.columns.addAll(Arrays.asList(columns));
 	}
 	
+	public void addToPrimaryKey(ColumnWithType column) {
+		this.primaryKey.add(column);
+	}
 	
 	
 	@Override

@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
@@ -13,8 +14,8 @@ import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.OrderByElement;
@@ -112,17 +113,23 @@ public class ParseTreeGenerator {
 					
 					/* Generate the schema for this table */
 					Schema schema = new Schema(tableName, tableFile);
-					@SuppressWarnings("rawtypes")
-					Iterator i = cTable.getColumnDefinitions().listIterator();
+					@SuppressWarnings("unchecked")
+					List<ColumnDefinition> columnDefinitions
+								= cTable.getColumnDefinitions();
 					
 					int k = 0;
-					while(i.hasNext()) {
-						String colNameAndType[] = i.next().toString().split(" ");
-						colNameAndType[0] = colNameAndType[0].toLowerCase();
-						colNameAndType[1] = colNameAndType[1].toLowerCase();
-						if(colNameAndType[1].equalsIgnoreCase("integer"))
-							colNameAndType[1] = "int";
-						ColumnWithType c = new ColumnWithType(cTable.getTable(), colNameAndType[0], colNameAndType[1], k);
+					for(ColumnDefinition colDef : columnDefinitions) {
+						String name = colDef.getColumnName().toLowerCase();
+						String type = colDef.getColDataType().getDataType().toLowerCase();
+						if(type.equalsIgnoreCase("integer")) {
+							type = "int";
+						}
+						ColumnWithType c = new ColumnWithType(
+								cTable.getTable(),
+								name, 
+								type,
+								k
+								);
 						k++;
 						schema.addColumn(c);
 					}
