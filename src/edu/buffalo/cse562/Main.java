@@ -9,11 +9,12 @@
 
 package edu.buffalo.cse562;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-
 
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.schema.Schema;
@@ -41,9 +42,12 @@ public class Main {
 	public static boolean memoryLimitsOn = false;
 	public static boolean preprocessingOn = false;
 	
+	private static final File createTableStatementsFile = new File("schema.sql");
 	
 	
 	
+	
+	@SuppressWarnings("resource")
 	public static void main(String[] args) {
 		
 //		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -113,8 +117,26 @@ public class Main {
 				System.err.println("Index built for "+s.getTableName());
 			}
 			
+			BufferedWriter bw = null;
+			try {
+				bw = new BufferedWriter(new FileWriter(createTableStatementsFile));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			ArrayList<String> createTableStatements = ParseTreeGenerator.getCreateTableStatements();
+			for(String ctStatement : createTableStatements) {
+				try {
+					bw.write(ctStatement+"\n");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
 			return;
 		}
+		
+		sqlFiles.add(0, createTableStatementsFile);
 		
 		/* 
 		 * Keep track of query time locally.
@@ -142,7 +164,7 @@ public class Main {
 			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
 		}
 		
-		long generateTime = System.nanoTime();
+//		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		for(int i=0; i< parseTreeList.size(); i++) {
@@ -160,7 +182,7 @@ public class Main {
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-		System.out.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+//		System.out.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }
