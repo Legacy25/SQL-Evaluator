@@ -47,7 +47,6 @@ public class Main {
 	
 	
 	
-	@SuppressWarnings("resource")
 	public static void main(String[] args) {
 		
 //		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -106,6 +105,16 @@ public class Main {
 		}
 		
 		if(preprocessingOn) {
+			if(indexDirectory != null) {
+				for(File f:indexDirectory.listFiles()) {
+					try {
+						Files.deleteIfExists(f.toPath());
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			
 			for(File f : sqlFiles) {
 				ParseTreeGenerator.generate(dataDirs, f);
 			}
@@ -142,7 +151,9 @@ public class Main {
 			return;
 		}
 		
-		sqlFiles.add(0, new File(indexDirectory+"//"+createTableStatementsFile));
+		if(indexDirectory != null) {
+			sqlFiles.add(0, new File(indexDirectory+"//"+createTableStatementsFile));
+		}
 		
 		/* 
 		 * Keep track of query time locally.
@@ -170,7 +181,7 @@ public class Main {
 			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
 		}
 		
-//		long generateTime = System.nanoTime();
+		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		for(int i=0; i< parseTreeList.size(); i++) {
@@ -188,7 +199,7 @@ public class Main {
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-//		System.out.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

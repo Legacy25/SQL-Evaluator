@@ -26,13 +26,15 @@ public class QueryPreprocessor {
 		Database table = null;
 		
 		try {
-			
 			EnvironmentConfig envConfig = new EnvironmentConfig();
 			envConfig.setAllowCreate(true);
+			envConfig.setLocking(false);
+			
+			DatabaseConfig dbConfig = new DatabaseConfig();
+			dbConfig.setAllowCreate(true);
+
 			db = new Environment(Main.indexDirectory, envConfig);
-			DatabaseConfig dbCon = new DatabaseConfig();
-			dbCon.setAllowCreate(true);
-			table = db.openDatabase(null, s.getTableName(), dbCon);
+			table = db.openDatabase(null, s.getTableName(), dbConfig);
 			
 			BufferedReader br = new BufferedReader(new FileReader(new File(s.getTableFile())));
 			String[] tuple = null;

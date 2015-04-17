@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.DiskOrderedCursor;
+import com.sleepycat.je.DiskOrderedCursorConfig;
 import com.sleepycat.je.Environment;
+import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 
@@ -35,7 +38,7 @@ public class IndexProjectScanOperator implements Operator {
 	
 	private Environment db;
 	private Database table;
-	private Cursor cursor;
+	private DiskOrderedCursor cursor;
 	
 	
 	public IndexProjectScanOperator(Schema schema, HashSet<String> selectedColumnNames) {
@@ -81,10 +84,21 @@ public class IndexProjectScanOperator implements Operator {
 	public void initialize() {
 		
 		try {
-			db = new Environment(Main.indexDirectory, null);
-			table = db.openDatabase(null, oldSchema.getTableName(), null);
+
+			EnvironmentConfig envConfig = new EnvironmentConfig();
+			envConfig.setAllowCreate(false);
+			envConfig.setReadOnly(true);
+			envConfig.setLocking(false);
 			
-			cursor = table.openCursor(null, null);
+			DatabaseConfig dbConfig = new DatabaseConfig();
+			dbConfig.setAllowCreate(false);
+			dbConfig.setReadOnly(true);
+
+			db = new Environment(Main.indexDirectory, envConfig);
+			table = db.openDatabase(null, oldSchema.getTableName(), dbConfig);
+			
+			DiskOrderedCursorConfig curConfig = new DiskOrderedCursorConfig();
+			cursor = table.openCursor(curConfig);
 			
 		} catch (DatabaseException e) {
 			e.printStackTrace();
@@ -107,7 +121,7 @@ public class IndexProjectScanOperator implements Operator {
 		DatabaseEntry val = new DatabaseEntry();
 		
 		try {
-			if(cursor.getNext(key, val, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+			if(cursor.getNext(key, val, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS) {
 				ByteArrayInputStream in = new ByteArrayInputStream(val.getData());
 				DataInputStream dis = new DataInputStream(in);
 				
