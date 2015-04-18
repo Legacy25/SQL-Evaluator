@@ -190,4 +190,12 @@ public class ProjectScanOperator implements Operator {
 		
 	}
 
+	public Schema getOldSchema() {
+		return oldSchema;
+	}
+
+	public HashSet<String> getSelectedColumns() {
+		return selectedColumnNames;
+	}
+
 }

@@ -40,8 +40,6 @@ public class QueryPreprocessor {
 			String[] tuple = null;
 			String line = null;
 
-			Integer uid = 0;
-			
 			while( (line = br.readLine()) != null ) {
 				tuple = line.split("\\|");
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -65,10 +63,11 @@ public class QueryPreprocessor {
 						break;
 					}
 				}
+				
 				DatabaseEntry key = null;
+				
 				if(s.getTableName().equalsIgnoreCase("LINEITEM")) {
-					key = new DatabaseEntry(uid.toString().getBytes());
-					uid++;
+					key = new DatabaseEntry((tuple[0].toString()+"|"+tuple[3].toString()).getBytes());
 				}
 				else {
 					key = new DatabaseEntry(tuple[0].toString().getBytes());

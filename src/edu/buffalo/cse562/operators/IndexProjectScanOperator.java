@@ -49,7 +49,21 @@ public class IndexProjectScanOperator implements Operator {
 		table = null;
 		cursor = null;
 		
-		selectedCols = new boolean[schema.getColumns().size()];
+		selectedCols = new boolean[oldSchema.getColumns().size()];
+		Arrays.fill(selectedCols, false);
+		
+		buildSchema();
+	}
+	
+	public IndexProjectScanOperator(ProjectScanOperator psOp) {
+		this.oldSchema = psOp.getOldSchema();
+		this.selectedColumnNames = psOp.getSelectedColumns();
+		
+		db = null;
+		table = null;
+		cursor = null;
+		
+		selectedCols = new boolean[oldSchema.getColumns().size()];
 		Arrays.fill(selectedCols, false);
 		
 		buildSchema();
@@ -77,7 +91,7 @@ public class IndexProjectScanOperator implements Operator {
 
 	@Override
 	public void generateSchemaName() {
-		
+		newSchema.setTableName("iScan("+oldSchema.getTableName()+")");
 	}
 
 	@Override

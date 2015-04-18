@@ -45,7 +45,7 @@ public class ParseTreeGenerator {
 
 	/* The tables HashMap keeps a mapping of tables to their corresponding schemas */
 	private static ArrayList<Schema> tables = new ArrayList<Schema>();
-	private static ArrayList<String> createTableStatements = new ArrayList<String>();
+//	private static ArrayList<String> createTableStatements = new ArrayList<String>();
 	
 	/* Function to find a table within the provided Data Directories */
 	private static String findFile(ArrayList<String> dataDirs, String tableName) {
@@ -91,6 +91,7 @@ public class ParseTreeGenerator {
 			 * 
 			 * We only concern ourselves with two kinds of Statement - CreateTable & Select
 			 */
+
 			while((statement = parser.Statement()) != null) {
 				/*
 				 * CREATE TABLE Statement
@@ -100,8 +101,10 @@ public class ParseTreeGenerator {
 				 * be used later to process SELECT queries
 				 * 
 				 */				
+
+				System.err.println("QUERY: "+statement);
 				if(statement instanceof CreateTable) {
-					createTableStatements.add(statement.toString());
+//					createTableStatements.add(statement.toString());
 					
 					CreateTable cTable = (CreateTable) statement;
 					
@@ -466,7 +469,7 @@ public class ParseTreeGenerator {
 		return tables;
 	}
 	
-	public static ArrayList<String> getCreateTableStatements() {
-		return createTableStatements;
-	}
+//	public static ArrayList<String> getCreateTableStatements() {
+//		return createTableStatements;
+//	}
 }
