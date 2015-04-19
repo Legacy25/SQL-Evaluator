@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -16,14 +15,21 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.SecondaryConfig;
+import com.sleepycat.je.SecondaryDatabase;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.schema.Column;
+import edu.buffalo.cse562.DynamicKeyCreator;
 import edu.buffalo.cse562.Main;
+import edu.buffalo.cse562.ParseTreeGenerator;
+import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
@@ -32,12 +38,14 @@ public class IndexProjectScanOperator implements Operator {
 	private Schema oldSchema;
 	private Schema newSchema;
 	private Expression where;
+	private Column col;
 	
 	private boolean[] selectedCols;
 	
 	
 	private Environment db;
 	private Database table;
+	private SecondaryDatabase index;
 	private DiskOrderedCursor cursor;
 	
 	
@@ -49,6 +57,9 @@ public class IndexProjectScanOperator implements Operator {
 		db = null;
 		table = null;
 		cursor = null;
+		
+		BinaryExpression be = ((BinaryExpression) ParseTreeOptimizer.splitAndClauses(where).get(0));
+		col = (Column) be.getLeftExpression();
 		
 		selectedCols = new boolean[oldSchema.getColumns().size()];
 		Arrays.fill(selectedCols, false);
@@ -92,17 +103,20 @@ public class IndexProjectScanOperator implements Operator {
 			envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
 			envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
 			
-			DatabaseConfig dbConfig = new DatabaseConfig();
-			if(oldSchema.getTableName().equalsIgnoreCase("LINEITEM")) {
-				dbConfig.setSortedDuplicates(true);
-			}
+			DatabaseConfig dbCon = new DatabaseConfig();
 
 			db = new Environment(Main.indexDirectory, envConfig);
-			table = db.openDatabase(null, oldSchema.getTableName(), dbConfig);
+			table = db.openDatabase(null, newSchema.getTableName(), dbCon);
+			
+			SecondaryConfig sCon = new SecondaryConfig();
+			sCon.setAllowPopulate(true);
+			sCon.setKeyCreator(new DynamicKeyCreator(oldSchema, col));
+			
+			index = db.openSecondaryDatabase(null, col.getColumnName(), table, sCon);
 			
 			DiskOrderedCursorConfig curConfig = new DiskOrderedCursorConfig();
 			curConfig.setQueueSize(100000);
-			cursor = table.openCursor(curConfig);
+			cursor = index.openCursor(curConfig);
 			
 		} catch (DatabaseException e) {
 			e.printStackTrace();

@@ -16,6 +16,7 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
+import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.OrderByElement;
@@ -102,7 +103,6 @@ public class ParseTreeGenerator {
 				 * 
 				 */				
 
-				System.err.println("QUERY: "+statement);
 				if(statement instanceof CreateTable) {
 //					createTableStatements.add(statement.toString());
 					
@@ -110,6 +110,10 @@ public class ParseTreeGenerator {
 					
 					String tableName = cTable.getTable().toString();
 					String tableFile = findFile(dataDirs, tableName);
+					Index primaryKey = (Index) cTable.getIndexes().get(0);
+					
+					@SuppressWarnings("unchecked")
+					ArrayList<String> pKCols = (ArrayList<String>) primaryKey.getColumnsNames();
 					
 					if(tableFile == null) {
 						System.err.println("Table "+ tableName + " not found in any "
@@ -124,7 +128,7 @@ public class ParseTreeGenerator {
 								= cTable.getColumnDefinitions();
 					
 					int k = 0;
-					for(ColumnDefinition colDef : columnDefinitions) {
+					for(ColumnDefinition colDef : columnDefinitions) {	
 						String name = colDef.getColumnName().toLowerCase();
 						String type = colDef.getColDataType().getDataType().toLowerCase();
 						if(type.equalsIgnoreCase("integer")) {
@@ -138,12 +142,25 @@ public class ParseTreeGenerator {
 								);
 						k++;
 						schema.addColumn(c);
+						
+						if(pKCols.contains(name)) {
+							schema.addToPrimaryKey(c);
+						}
+						if(colDef.getColumnSpecStrings() != null) {
+							schema.addToForeignKeys(c);
+						}
 					}
 
-					schema = computeKeys(schema);
+					schema = QueryPreprocessor.generateSecondaryIndexes(schema);
+					schema.loadSchemaStatistics(Main.indexDirectory);
 					
 					/* Store schema for later use */
 					tables.add(schema);
+					
+					if(Main.DEBUG) {
+						System.err.println(cTable);
+						System.err.println("ParseTreeGenerator generated schema: "+schema);
+					}
 				}
 				
 				/*
@@ -235,7 +252,7 @@ public class ParseTreeGenerator {
 		}
 		
 		if(fi instanceof SubJoin) {
-			// TODO
+			
 		}
 		
 		if(fi instanceof SubSelect) {
@@ -464,48 +481,8 @@ public class ParseTreeGenerator {
 	}
 	
 	
-	
-	
-	
 	public static ArrayList<Schema> getTableSchemas() {
 		return tables;
 	}
 	
-//	public static ArrayList<String> getCreateTableStatements() {
-//		return createTableStatements;
-//	}
-	
-	public static Schema computeKeys(Schema s) {
-		s.addToPrimaryKey(s.getColumns().get(0));
-		
-		if(s.getTableName().equalsIgnoreCase("LINEITEM")) {
-			s.addToSecondaryIndexes(s.getColumns().get(1));
-			s.addToSecondaryIndexes(s.getColumns().get(2));
-			s.addToSecondaryIndexes(s.getColumns().get(8));
-			s.addToSecondaryIndexes(s.getColumns().get(10));
-		}
-		else if(s.getTableName().equalsIgnoreCase("ORDERS")) {
-			s.addToSecondaryIndexes(s.getColumns().get(1));
-			s.addToSecondaryIndexes(s.getColumns().get(4));
-			
-		}
-		else if(s.getTableName().equalsIgnoreCase("CUSTOMER")) {
-			s.addToSecondaryIndexes(s.getColumns().get(3));
-			s.addToSecondaryIndexes(s.getColumns().get(6));
-			
-		}
-		else if(s.getTableName().equalsIgnoreCase("SUPPLIER")) {
-			s.addToSecondaryIndexes(s.getColumns().get(3));
-			
-		}
-		else if(s.getTableName().equalsIgnoreCase("NATION")) {
-			s.addToSecondaryIndexes(s.getColumns().get(2));
-			
-		}
-		else if(s.getTableName().equalsIgnoreCase("REGION")) {
-			s.addToSecondaryIndexes(s.getColumns().get(1));
-		}
-		
-		return s;
-	}
 }

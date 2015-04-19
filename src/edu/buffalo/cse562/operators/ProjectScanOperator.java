@@ -47,7 +47,8 @@ public class ProjectScanOperator implements Operator {
 	}
 	
 	private void buildSchema() {
-		newSchema = new Schema(oldSchema.getTableName(), oldSchema.getTableFile());
+		newSchema = new Schema(oldSchema);
+		newSchema.getColumns().clear();
 		
 		int i = 0;
 		for(ColumnWithType c : oldSchema.getColumns()) {
@@ -57,14 +58,6 @@ public class ProjectScanOperator implements Operator {
 			}
 			
 			i++;
-		}
-		
-		for(int i1=0; i1<oldSchema.getPrimaryKeySize(); i1++) {
-			newSchema.addToPrimaryKey(oldSchema.getPrimaryKey(i1));
-		}
-		
-		for(ColumnWithType col : oldSchema.getSecondaryIndexes()) {
-			newSchema.addToSecondaryIndexes(col);
 		}
 	}
 	

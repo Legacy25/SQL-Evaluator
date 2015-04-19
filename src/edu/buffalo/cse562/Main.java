@@ -40,27 +40,15 @@ public class Main {
 	public static boolean memoryLimitsOn = false;
 	public static boolean preprocessingOn = false;
 	
-//	private static final String createTableStatementsFile = "schema.sql";
 	
+	public static boolean DEBUG = true;
 	
 	
 	
 	public static void main(String[] args) {
 		
-//		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-//		try {
-//			System.out.println("Press enter to continue...");
-//			br.readLine();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
+		DEBUG = false;
 		
-		
-//		/* Detect whether limited memory is available */
-//		if(Runtime.getRuntime().maxMemory() / 1024 / 1024 < 100)
-//			memoryLimitsOn = true;
-		
-
 		/* Stores the data directories */
 		ArrayList<String> dataDirs = new ArrayList<String>();
 		
@@ -87,6 +75,9 @@ public class Main {
 			else if(args[i].equalsIgnoreCase("--load")) {
 				preprocessingOn = true;
 			}
+			else if(args[i].equalsIgnoreCase("--debug")) {
+				DEBUG = true;
+			}
 			else {
 				sqlFiles.add(new File(args[i]));
 			}
@@ -103,6 +94,10 @@ public class Main {
 		}
 		
 		if(preprocessingOn) {
+			
+			/*
+			 * Clear the index directory
+			 */
 			if(indexDirectory != null) {
 				for(File f:indexDirectory.listFiles()) {
 					try {
@@ -112,65 +107,42 @@ public class Main {
 					}
 				}
 			}
+			else {
+				System.err.println("No Index directory defined! Exiting...");
+				System.exit(1);
+			}
 			
+			/*
+			 * Generate schemas
+			 */
 			for(File f : sqlFiles) {
 				ParseTreeGenerator.generate(dataDirs, f);
 			}
 			
+			/*
+			 * Get the schemas and build indexes
+			 */
 			ArrayList<Schema> tables = ParseTreeGenerator.getTableSchemas();
-			
 			for(Schema s:tables) {
 				QueryPreprocessor.buildIndex(s);
-				System.err.println("Index built for "+s.getTableName());
+				s.storeSchemaStatistics(indexDirectory);
 			}
 			
-//			BufferedWriter bw = null;
-//			try {
-//				bw = new BufferedWriter(new FileWriter(indexDirectory+"//"+createTableStatementsFile));
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//			
-//			ArrayList<String> createTableStatements = ParseTreeGenerator.getCreateTableStatements();
-//			for(String ctStatement : createTableStatements) {
-//				try {
-//					bw.write(ctStatement+"\n");
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-//			}
-//			
-//			try {
-//				bw.flush();
-//				bw.close();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
 			return;
 		}
 		
-//		if(indexDirectory != null) {
-//			sqlFiles.add(0, new File(indexDirectory+"//"+createTableStatementsFile));
-//		}
 		
 		/* 
 		 * Keep track of query time locally.
 		 * This code should be commented out before
 		 * commits for submissions.
 		 */
-//		long start = System.nanoTime();
+		long start = System.nanoTime();
 		
 		/* The generated list of parse-trees, one for each query */
 		ArrayList<Operator> parseTreeList = new ArrayList<Operator>();
 		for(File f : sqlFiles) {
 			parseTreeList.add(ParseTreeGenerator.generate(dataDirs, f));
-
-			/* DEBUG */
-			/* Show the unoptimized Query Plan */
-//			System.err.println(
-//					"Unoptimized:\n\n" +
-//					parseTreeList.get(parseTreeList.size()-1).getSchema()
-//					);
 		}
 		
 		/* Optimize each parse-tree */
@@ -188,9 +160,11 @@ public class Main {
 			/* DEBUG */
 			/* Show the optimized Query Plan */
 			if(parseTreeList.get(i) != null) {
-				System.err.println(
-						parseTreeList.get(i).getSchema()
-						);
+				if(Main.DEBUG) {
+					System.err.println(
+							parseTreeList.get(i).getSchema()
+							);
+				}
 				
 				ParseTreeEvaluator.evaluate(parseTreeList.get(i));
 			}
@@ -198,8 +172,10 @@ public class Main {
 		
 		/* DEBUG */
 		/* Show query times */
-//		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		if(Main.DEBUG) {
+			System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
+			System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		}
 		
 	}
 }

@@ -1,6 +1,7 @@
 package edu.buffalo.cse562;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -64,6 +65,9 @@ public class ParseTreeOptimizer {
 		 * Query plan rewrites for faster evaluation
 		 */
 		
+		/* Reorder joins for left deep */
+		parseTree = reOrderJoins(parseTree);
+		
 		/* Push down projections */
 		if(!(parseTree instanceof ScanOperator))
 			parseTree = pushDownProjections(parseTree);
@@ -90,6 +94,49 @@ public class ParseTreeOptimizer {
 		
 	}
 	
+	private static Operator reOrderJoins(Operator parseTree) {
+		if(parseTree == null) {
+			return null;
+		}
+		
+		if(parseTree instanceof CrossProductOperator) {
+			ArrayList<ScanOperator> relations = 
+					findAllRelations(parseTree);
+			
+			relations.sort(new Comparator<ScanOperator>() {
+
+				@Override
+				public int compare(ScanOperator o1, ScanOperator o2) {
+					long rC1 = o1.getSchema().getRowCount();
+					long rC2 = o2.getSchema().getRowCount();
+					long diff = rC1 - rC2;
+					return (int) diff;
+				}
+			});
+			
+			parseTree = new CrossProductOperator(relations.get(0), relations.get(1));
+			
+			for(int i=2; i<relations.size(); i++) {
+				parseTree = new CrossProductOperator(parseTree, relations.get(i));
+			}
+		}
+		
+		parseTree.setLeft(reOrderJoins(parseTree.getLeft()));
+		parseTree.setRight(reOrderJoins(parseTree.getRight()));
+		return parseTree;
+	}
+
+	private static ArrayList<ScanOperator> findAllRelations(Operator parseTree) {
+		ArrayList<ScanOperator> relations = new ArrayList<ScanOperator>();
+		while(parseTree instanceof CrossProductOperator) {
+			relations.add((ScanOperator) parseTree.getRight());
+			parseTree = parseTree.getLeft();
+		}
+		
+		relations.add((ScanOperator) parseTree);
+		return relations;
+	}
+
 	private static Operator pushDownProjections(Operator parseTree) {
 		
 		HashSet<String> projections = new HashSet<String>();

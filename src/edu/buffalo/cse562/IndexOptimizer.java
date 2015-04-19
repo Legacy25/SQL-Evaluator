@@ -23,10 +23,7 @@ public class IndexOptimizer {
 			return parseTree;
 		}
 		
-//		parseTree = replaceScansWithIndexScans(parseTree);
-
-		parseTree = replaceSelectionScansWithIndexScans(parseTree);
-		
+//		parseTree = replaceSelectionScansWithIndexScans(parseTree);
 		
 		/* Generate appropriate table names after optimization */
 		parseTree.generateSchemaName();
@@ -176,7 +173,7 @@ public class IndexOptimizer {
 		return true;
 	}
 
-	private static boolean isAPrimaryKey(Column left, Schema schema) {
+	public static boolean isAPrimaryKey(Column left, Schema schema) {
 
 		if(schema.getPrimaryKeySize() != 1) {
 			return false;
@@ -189,7 +186,7 @@ public class IndexOptimizer {
 		return false;
 	}
 
-	private static boolean isASecondaryIndex(Column left, Schema schema) {
+	public static boolean isASecondaryIndex(Column left, Schema schema) {
 		
 		if(schema.getSecondaryIndexes().size() == 0) {
 			return false;
@@ -203,22 +200,5 @@ public class IndexOptimizer {
 		
 		return false;
 	}
-
-//	private static Operator replaceScansWithIndexScans(Operator parseTree) {
-//		
-//		if(parseTree == null)
-//			return null;
-//		
-//		if(parseTree instanceof ProjectScanOperator) {
-//			ProjectScanOperator psOp = (ProjectScanOperator) parseTree;
-//			parseTree = new IndexProjectScanOperator(psOp);
-//		}
-//		
-//		parseTree.setLeft(replaceScansWithIndexScans(parseTree.getLeft()));
-//		parseTree.setRight(replaceScansWithIndexScans(parseTree.getRight()));
-//		
-//		return parseTree;
-//		
-//	}
 
 }
