@@ -32,6 +32,9 @@ public class QueryPreprocessor {
 			
 			DatabaseConfig dbConfig = new DatabaseConfig();
 			dbConfig.setAllowCreate(true);
+			if(s.getTableName().equalsIgnoreCase("LINEITEM")) {
+				dbConfig.setSortedDuplicates(true);
+			}
 
 			db = new Environment(Main.indexDirectory, envConfig);
 			table = db.openDatabase(null, s.getTableName(), dbConfig);
@@ -42,40 +45,22 @@ public class QueryPreprocessor {
 
 			while( (line = br.readLine()) != null ) {
 				tuple = line.split("\\|");
-				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(out);
+				ByteArrayOutputStream out = getByteArrayFromTuple(tuple, s);
 				
-				for(int i=0; i<tuple.length; i++) {
-					switch(s.getColumns().get(i).getColumnType()) {
-					case "int":
-						dos.writeLong(Integer.parseInt(tuple[i]));
-						break;
-					
-					case "decimal":
-						dos.writeDouble(Double.parseDouble(tuple[i]));
-						break;
-					
-					case "char":
-					case "varchar":
-					case "string":
-					case "date":
-						dos.writeUTF(" "+tuple[i]+" ");
-						break;
-					}
+				String keyString = "";
+				
+				for(int i=0; i<s.getPrimaryKeySize(); i++) {
+					keyString += tuple[s.columnToIndex(s.getPrimaryKey(i))] + "|";
 				}
 				
-				DatabaseEntry key = null;
-				
-				if(s.getTableName().equalsIgnoreCase("LINEITEM")) {
-					key = new DatabaseEntry((tuple[0].toString()+"|"+tuple[3].toString()).getBytes());
-				}
-				else {
-					key = new DatabaseEntry(tuple[0].toString().getBytes());
-				}
+				keyString = keyString.substring(0, keyString.length() - 1);
+
+				DatabaseEntry key = new DatabaseEntry(keyString.getBytes());
 				DatabaseEntry val = new DatabaseEntry(out.toByteArray());
 				
 				table.put(null, key, val);
 			}
+			
 			br.close();
 			
 		} catch (DatabaseException | IOException e) {
@@ -88,6 +73,38 @@ public class QueryPreprocessor {
 				db.close();
 			}
 		}
+	}
+
+	private static ByteArrayOutputStream getByteArrayFromTuple(
+			String[] tuple, Schema s) throws NumberFormatException, IOException {
+		
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(out);
+		
+		for(int i=0; i<tuple.length; i++) {
+			switch(s.getColumns().get(i).getColumnType()) {
+			case "int":
+				dos.writeLong(Integer.parseInt(tuple[i]));
+				break;
+			
+			case "decimal":
+				dos.writeDouble(Double.parseDouble(tuple[i]));
+				break;
+			
+			case "char":
+			case "varchar":
+			case "string":
+			case "date":
+				dos.writeUTF(" "+tuple[i]+" ");
+				break;
+			}
+		}
+		
+		return out;
+	}
+	
+	public static void buildSecondaryIndexes(Schema s) {
+		// TODO
 	}
 
 	

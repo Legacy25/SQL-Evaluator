@@ -180,7 +180,7 @@ public class Main {
 			parseTreeList.set(i, IndexOptimizer.optimize(parseTree));
 		}
 		
-//		long generateTime = System.nanoTime();
+		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		for(int i=0; i< parseTreeList.size(); i++) {
@@ -188,10 +188,9 @@ public class Main {
 			/* DEBUG */
 			/* Show the optimized Query Plan */
 			if(parseTreeList.get(i) != null) {
-//				System.err.println(
-//						"Optimized:\n\n" +
-//						parseTreeList.get(i).getSchema()
-//						);
+				System.err.println(
+						parseTreeList.get(i).getSchema()
+						);
 				
 				ParseTreeEvaluator.evaluate(parseTreeList.get(i));
 			}
@@ -200,7 +199,7 @@ public class Main {
 		/* DEBUG */
 		/* Show query times */
 //		System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-//		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+		System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
 		
 	}
 }

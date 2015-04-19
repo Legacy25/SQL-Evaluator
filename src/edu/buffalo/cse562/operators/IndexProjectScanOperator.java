@@ -19,6 +19,7 @@ import com.sleepycat.je.OperationStatus;
 
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -30,9 +31,8 @@ public class IndexProjectScanOperator implements Operator {
 
 	private Schema oldSchema;
 	private Schema newSchema;
+	private Expression where;
 	
-	
-	private HashSet<String> selectedColumnNames;
 	private boolean[] selectedCols;
 	
 	
@@ -41,23 +41,10 @@ public class IndexProjectScanOperator implements Operator {
 	private DiskOrderedCursor cursor;
 	
 	
-	public IndexProjectScanOperator(Schema schema, HashSet<String> selectedColumnNames) {
-		this.oldSchema = schema;
-		this.selectedColumnNames = selectedColumnNames;
-		
-		db = null;
-		table = null;
-		cursor = null;
-		
-		selectedCols = new boolean[oldSchema.getColumns().size()];
-		Arrays.fill(selectedCols, false);
-		
-		buildSchema();
-	}
-	
-	public IndexProjectScanOperator(ProjectScanOperator psOp) {
-		this.oldSchema = psOp.getOldSchema();
-		this.selectedColumnNames = psOp.getSelectedColumns();
+	public IndexProjectScanOperator(Schema oldSchema, Schema newSchema, Expression where) {
+		this.oldSchema = oldSchema;
+		this.newSchema = newSchema;
+		this.where = where;
 		
 		db = null;
 		table = null;
@@ -70,13 +57,14 @@ public class IndexProjectScanOperator implements Operator {
 	}
 	
 	private void buildSchema() {
-		newSchema = new Schema(oldSchema.getTableName(), oldSchema.getTableFile());
+		generateSchemaName();
 		
 		int i = 0;
 		for(ColumnWithType c : oldSchema.getColumns()) {
-			if(selectedColumnNames.contains(c.getColumnName().toLowerCase())) {
-				newSchema.addColumn(c);
-				selectedCols[i] = true;
+			for(int j=0; j<newSchema.getColumns().size(); j++) {
+				if(c.getColumnName().equalsIgnoreCase(newSchema.getColumns().get(j).getColumnName())) {
+					selectedCols[i] = true;
+				}
 			}
 			
 			i++;
@@ -91,7 +79,7 @@ public class IndexProjectScanOperator implements Operator {
 
 	@Override
 	public void generateSchemaName() {
-		newSchema.setTableName("iScan("+oldSchema.getTableName()+")");
+		newSchema.setTableName("iScan {" + where + "} ("+oldSchema.getTableName()+")");
 	}
 
 	@Override
@@ -100,18 +88,20 @@ public class IndexProjectScanOperator implements Operator {
 		try {
 
 			EnvironmentConfig envConfig = new EnvironmentConfig();
-			envConfig.setAllowCreate(false);
-			envConfig.setReadOnly(true);
 			envConfig.setLocking(false);
+			envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
+			envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
 			
 			DatabaseConfig dbConfig = new DatabaseConfig();
-			dbConfig.setAllowCreate(false);
-			dbConfig.setReadOnly(true);
+			if(oldSchema.getTableName().equalsIgnoreCase("LINEITEM")) {
+				dbConfig.setSortedDuplicates(true);
+			}
 
 			db = new Environment(Main.indexDirectory, envConfig);
 			table = db.openDatabase(null, oldSchema.getTableName(), dbConfig);
 			
 			DiskOrderedCursorConfig curConfig = new DiskOrderedCursorConfig();
+			curConfig.setQueueSize(100000);
 			cursor = table.openCursor(curConfig);
 			
 		} catch (DatabaseException e) {

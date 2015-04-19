@@ -139,6 +139,8 @@ public class ParseTreeGenerator {
 						k++;
 						schema.addColumn(c);
 					}
+
+					schema = computeKeys(schema);
 					
 					/* Store schema for later use */
 					tables.add(schema);
@@ -472,4 +474,38 @@ public class ParseTreeGenerator {
 //	public static ArrayList<String> getCreateTableStatements() {
 //		return createTableStatements;
 //	}
+	
+	public static Schema computeKeys(Schema s) {
+		s.addToPrimaryKey(s.getColumns().get(0));
+		
+		if(s.getTableName().equalsIgnoreCase("LINEITEM")) {
+			s.addToSecondaryIndexes(s.getColumns().get(1));
+			s.addToSecondaryIndexes(s.getColumns().get(2));
+			s.addToSecondaryIndexes(s.getColumns().get(8));
+			s.addToSecondaryIndexes(s.getColumns().get(10));
+		}
+		else if(s.getTableName().equalsIgnoreCase("ORDERS")) {
+			s.addToSecondaryIndexes(s.getColumns().get(1));
+			s.addToSecondaryIndexes(s.getColumns().get(4));
+			
+		}
+		else if(s.getTableName().equalsIgnoreCase("CUSTOMER")) {
+			s.addToSecondaryIndexes(s.getColumns().get(3));
+			s.addToSecondaryIndexes(s.getColumns().get(6));
+			
+		}
+		else if(s.getTableName().equalsIgnoreCase("SUPPLIER")) {
+			s.addToSecondaryIndexes(s.getColumns().get(3));
+			
+		}
+		else if(s.getTableName().equalsIgnoreCase("NATION")) {
+			s.addToSecondaryIndexes(s.getColumns().get(2));
+			
+		}
+		else if(s.getTableName().equalsIgnoreCase("REGION")) {
+			s.addToSecondaryIndexes(s.getColumns().get(1));
+		}
+		
+		return s;
+	}
 }

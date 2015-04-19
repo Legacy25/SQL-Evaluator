@@ -21,6 +21,7 @@ public class Schema {
 	private String tableFile;
 	private ArrayList<ColumnWithType> columns;
 	private ArrayList<ColumnWithType> primaryKey;
+	private ArrayList<ColumnWithType> secondaryIndexes;
 	
 	
 	public Schema(String tableName, String tableFile) {
@@ -30,6 +31,7 @@ public class Schema {
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
 		primaryKey = new ArrayList<ColumnWithType>();
+		secondaryIndexes = new ArrayList<ColumnWithType>();
 	}
 	
 	public Schema(Schema schema) {
@@ -37,12 +39,18 @@ public class Schema {
 		this.tableFile = schema.tableFile;
 		this.columns = new ArrayList<ColumnWithType>();
 		this.primaryKey = new ArrayList<ColumnWithType>();
+		this.secondaryIndexes = new ArrayList<ColumnWithType>();
 		
 		for(int i=0; i<schema.columns.size(); i++) {
 			columns.add(new ColumnWithType(schema.columns.get(i)));
 		}
+		
 		for(int i=0; i<schema.primaryKey.size(); i++) {
 			primaryKey.add(new ColumnWithType(schema.primaryKey.get(i)));
+		}
+		
+		for(ColumnWithType col : schema.getSecondaryIndexes()) {
+			secondaryIndexes.add(col);
 		}
 	}
 	
@@ -53,6 +61,7 @@ public class Schema {
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
 		primaryKey = new ArrayList<ColumnWithType>();
+		secondaryIndexes = new ArrayList<ColumnWithType>();
 	}
 
 	
@@ -78,8 +87,16 @@ public class Schema {
 		return columns;
 	}
 	
-	public ArrayList<ColumnWithType> getPrimaryKey() {
-		return primaryKey;
+	public ColumnWithType getPrimaryKey(int i) {
+		return primaryKey.get(i);
+	}
+	
+	public ArrayList<ColumnWithType> getSecondaryIndexes() {
+		return secondaryIndexes;
+	}
+	
+	public int getPrimaryKeySize() {
+		return primaryKey.size();
 	}
 
 	public void addColumn(ColumnWithType column) {
@@ -94,17 +111,31 @@ public class Schema {
 		this.primaryKey.add(column);
 	}
 	
+	public void addToSecondaryIndexes(ColumnWithType column) {
+		this.secondaryIndexes.add(column);
+	}
+	
+	public int columnToIndex(ColumnWithType col) {
+		for(int i=0; i<columns.size(); i++) {
+			if(columns.get(i) == col) {
+				return i;
+			}
+		}
+		
+		return -1;
+	}
+	
 	
 	@Override
 	public String toString() {
 		/* Return a formatted string containing the schema information */
-		String result = "Schema for table " + tableName	+ "\nTable File: " + tableFile +"\nColumns:\n";
+		String result = tableName+"\n";
 		
 		for(ColumnWithType col:columns) {
-			result = result + col.toString() + "\t";
+			result = result + col.toString() + " | ";
 		}
 		
-		result = result + "\n";
+		result = result.substring(0, result.length() - 2) + "\n";
 		return result;
 	}
 	

@@ -527,7 +527,7 @@ public class ParseTreeOptimizer {
 		return parseTree;
 	}
 
-	private static Expression mergeClauses(ArrayList<Expression> expressionList) {
+	public static Expression mergeClauses(ArrayList<Expression> expressionList) {
 		if(expressionList.isEmpty()) {
 			return null;
 		}
