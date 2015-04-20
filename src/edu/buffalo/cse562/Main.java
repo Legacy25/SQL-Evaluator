@@ -47,7 +47,7 @@ public class Main {
 	
 	public static void main(String[] args) {
 		
-		DEBUG = false;
+//		DEBUG = false;
 		
 		/* Stores the data directories */
 		ArrayList<String> dataDirs = new ArrayList<String>();

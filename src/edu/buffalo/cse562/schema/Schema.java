@@ -219,4 +219,8 @@ public class Schema {
 	public long getRowCount() {
 		return rowCount;
 	}
+	
+	public void clearColumns() {
+		columns.clear();
+	}
 }
