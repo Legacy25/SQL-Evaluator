@@ -81,7 +81,9 @@ public class ParseTreeOptimizer {
 				
 		/* Reorder Cross Products to facilitate more joins */
 		parseTree = reOrderCrossProducts(parseTree);
-		
+
+		/* Replace Selection over Cross Product with appropriate Join */
+		parseTree = findJoinPatternAndReplace(parseTree);
 
 		/* Replace Selection over Cross Product with appropriate Join */
 		if(Main.memoryLimitsOn) {

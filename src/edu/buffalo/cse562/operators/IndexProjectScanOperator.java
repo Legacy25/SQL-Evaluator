@@ -138,8 +138,7 @@ public class IndexProjectScanOperator implements Operator {
 
 			EnvironmentConfig envConfig = new EnvironmentConfig();
 			envConfig.setLocking(false);
-			envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
-			envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
+			envConfig.setCacheSize(893386752);
 			
 			DatabaseConfig dbCon = new DatabaseConfig();
 			dbCon.setReadOnly(true);

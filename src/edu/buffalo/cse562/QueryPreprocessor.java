@@ -41,6 +41,7 @@ public class QueryPreprocessor {
 			EnvironmentConfig envConfig = new EnvironmentConfig();
 			envConfig.setAllowCreate(true);
 			envConfig.setLocking(false);
+			envConfig.setCacheSize(893386752);
 
 			/* Database Configuration */
 			DatabaseConfig dbConfig = new DatabaseConfig();
