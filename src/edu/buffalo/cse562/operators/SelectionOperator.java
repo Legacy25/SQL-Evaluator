@@ -94,6 +94,7 @@ public class SelectionOperator extends Eval implements Operator {
 	public void initialize() {
 		child.initialize();
 		schema = child.getSchema();
+		generateSchemaName();
 		clauseList = ParseTreeOptimizer.splitAndClauses(where);
 	}
 	

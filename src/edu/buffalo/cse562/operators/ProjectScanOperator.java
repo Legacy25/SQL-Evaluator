@@ -47,7 +47,8 @@ public class ProjectScanOperator implements Operator {
 	}
 	
 	private void buildSchema() {
-		newSchema = new Schema(oldSchema.getTableName(), oldSchema.getTableFile());
+		newSchema = new Schema(oldSchema);
+		newSchema.clearColumns();
 		
 		int i = 0;
 		for(ColumnWithType c : oldSchema.getColumns()) {
@@ -58,7 +59,6 @@ public class ProjectScanOperator implements Operator {
 			
 			i++;
 		}
-		
 	}
 	
 	@Override
@@ -74,12 +74,15 @@ public class ProjectScanOperator implements Operator {
 	@Override
 	public void initialize() {
 
+		buildSchema();
+		
 		try {
 			fr = new FileReader(f);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 		br = new BufferedReader(fr);	
+		
 		
 	}
 
@@ -188,6 +191,14 @@ public class ProjectScanOperator implements Operator {
 	@Override
 	public void setRight(Operator o) {
 		
+	}
+
+	public Schema getOldSchema() {
+		return oldSchema;
+	}
+
+	public HashSet<String> getSelectedColumns() {
+		return selectedColumnNames;
 	}
 
 }
