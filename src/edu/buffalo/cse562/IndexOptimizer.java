@@ -23,7 +23,7 @@ public class IndexOptimizer {
 			return parseTree;
 		}
 		
-//		parseTree = replaceSelectionScansWithIndexScans(parseTree);
+		parseTree = replaceSelectionScansWithIndexScans(parseTree);
 		
 		/* Generate appropriate table names after optimization */
 		parseTree.generateSchemaName();
