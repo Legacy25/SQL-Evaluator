@@ -45,7 +45,6 @@ public class ParseTreeGenerator {
 
 	/* The tables HashMap keeps a mapping of tables to their corresponding schemas */
 	private static ArrayList<Schema> tables = new ArrayList<Schema>();
-	private static ArrayList<String> createTableStatements = new ArrayList<String>();
 	
 	/* Function to find a table within the provided Data Directories */
 	private static String findFile(ArrayList<String> dataDirs, String tableName) {
@@ -101,8 +100,6 @@ public class ParseTreeGenerator {
 				 * 
 				 */				
 				if(statement instanceof CreateTable) {
-					createTableStatements.add(statement.toString());
-					
 					CreateTable cTable = (CreateTable) statement;
 					
 					String tableName = cTable.getTable().toString();
@@ -464,9 +461,5 @@ public class ParseTreeGenerator {
 	
 	public static ArrayList<Schema> getTableSchemas() {
 		return tables;
-	}
-	
-	public static ArrayList<String> getCreateTableStatements() {
-		return createTableStatements;
 	}
 }

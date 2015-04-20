@@ -107,10 +107,10 @@ public class ParseTreeOptimizer {
 			return null;
 		
 		if(parseTree instanceof ScanOperator) {
-			if(Main.indexDirectory == null)
+//			if(Main.indexDirectory == null)
 				parseTree = new ProjectScanOperator(parseTree.getSchema(), projections);
-			else 
-				parseTree = new IndexProjectScanOperator(parseTree.getSchema(), projections);
+//			else 
+//				parseTree = new IndexProjectScanOperator(parseTree.getSchema(), projections);
 		}
 		
 		parseTree.setLeft(projectOutUnnecessaryColumns(parseTree.getLeft(), projections));

@@ -9,9 +9,7 @@
 
 package edu.buffalo.cse562;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -41,9 +39,6 @@ public class Main {
 	 */
 	public static boolean memoryLimitsOn = false;
 	public static boolean preprocessingOn = false;
-	
-	private static final String createTableStatementsFile = "schema.sql";
-	
 	
 	
 	
@@ -126,34 +121,12 @@ public class Main {
 				System.err.println("Index built for "+s.getTableName());
 			}
 			
-			BufferedWriter bw = null;
-			try {
-				bw = new BufferedWriter(new FileWriter(indexDirectory+"//"+createTableStatementsFile));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			ArrayList<String> createTableStatements = ParseTreeGenerator.getCreateTableStatements();
-			for(String ctStatement : createTableStatements) {
-				try {
-					bw.write(ctStatement+"\n");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			
-			try {
-				bw.flush();
-				bw.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 			return;
 		}
 		
-		if(indexDirectory != null) {
-			sqlFiles.add(0, new File(indexDirectory+"//"+createTableStatementsFile));
-		}
+//		if(indexDirectory != null) {
+//			sqlFiles.add(0, new File(indexDirectory+"//"+createTableStatementsFile));
+//		}
 		
 		/* 
 		 * Keep track of query time locally.
@@ -188,10 +161,12 @@ public class Main {
 			
 			/* DEBUG */
 			/* Show the optimized Query Plan */
-//			System.err.println(
-//					"Optimized:\n\n" +
-//					parseTreeList.get(i).getSchema()
-//					);
+			if(parseTreeList.get(i)!=null) {
+				System.err.println(
+						"Optimized:\n\n" +
+						parseTreeList.get(i).getSchema()
+						);
+			}
 			
 			ParseTreeEvaluator.evaluate(parseTreeList.get(i));
 		}

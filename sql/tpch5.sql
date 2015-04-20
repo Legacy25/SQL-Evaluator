@@ -62,12 +62,7 @@ SELECT
 	nation.name,
 	sum(lineitem.extendedprice * (1 - lineitem.discount)) as revenue
 FROM
-	region,
-	supplier,
-	customer,
-	nation,
-	orders,
-	lineitem
+	region, nation, customer, orders, lineitem, supplier
 WHERE
 	customer.custkey = orders.custkey
 	and lineitem.orderkey = orders.orderkey

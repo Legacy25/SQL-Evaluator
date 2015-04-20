@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import edu.buffalo.cse562.Eval;
+import edu.buffalo.cse562.ParseTreeEvaluator;
 import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
@@ -172,7 +173,8 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 	private void generateOutput() {
 		
 		while((next = child.readOneTuple()) != null) {
-			
+			System.out.println("Got tuple: ");
+			ParseTreeEvaluator.display(next);
 			String key = "";
 			
 			for(int i=0; i<selectedCols.length; i++) {
