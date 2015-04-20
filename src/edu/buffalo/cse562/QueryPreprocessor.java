@@ -14,6 +14,8 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.SecondaryConfig;
+import com.sleepycat.je.SecondaryDatabase;
 
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
@@ -27,6 +29,7 @@ public class QueryPreprocessor {
 		/* Initializations */
 		Environment db = null;
 		Database table = null;
+		ArrayList<SecondaryDatabase> indexes = new ArrayList<SecondaryDatabase>();
 		
 		try {
 			
@@ -45,7 +48,21 @@ public class QueryPreprocessor {
 
 			db = new Environment(Main.indexDirectory, envConfig);
 			table = db.openDatabase(null, s.getTableName(), dbConfig);
-
+			
+			/*Secondary Database */
+			SecondaryConfig secCon = new SecondaryConfig();
+			secCon.setAllowCreate(true);
+			secCon.setAllowPopulate(true);
+			secCon.setSortedDuplicates(true);
+			
+			for(int i = 0; i<s.getSecondaryIndexes().size(); i++) {
+				secCon.setKeyCreator(new DynamicKeyCreator(s, s.getSecondaryIndexes().get(i)));
+				SecondaryDatabase secTable = 
+						db.openSecondaryDatabase(
+								null, s.getSecondaryIndexes().get(i).getColumnName(), table, secCon);
+				
+				indexes.add(secTable);
+			}
 			
 			while( (line = br.readLine()) != null ) {
 				
@@ -68,6 +85,12 @@ public class QueryPreprocessor {
 		}
 		finally {
 			/* Close everything */
+			for(SecondaryDatabase sD : indexes) {
+				if(Main.DEBUG) {
+					System.err.println("Secondary index buit for "+s.getTableName()+" for column "+sD.getDatabaseName());
+				}
+				sD.close();
+			}
 			if(table != null) {
 				table.close();
 			}
@@ -166,12 +189,11 @@ public class QueryPreprocessor {
 		
 		switch(name) {
 		case "LINEITEM":
-			s.addToSecondaryIndexes(columns.get(0));
 			s.addToSecondaryIndexes(columns.get(8));
-			s.addToSecondaryIndexes(columns.get(10));
+			s.addToSecondaryIndexes(columns.get(14));
 			break;
 		case "ORDERS":
-			s.addToSecondaryIndexes(columns.get(4));
+
 			break;
 		case "CUSTOMER":
 			s.addToSecondaryIndexes(columns.get(6));
