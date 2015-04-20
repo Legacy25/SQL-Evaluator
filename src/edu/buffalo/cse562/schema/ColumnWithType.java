@@ -57,6 +57,6 @@ public class ColumnWithType extends Column {
 	
 	@Override
 	public String toString() {
-		return this.getColumn().getWholeColumnName();
+		return "("+this.getColumn().getWholeColumnName()+": "+this.getColumnType()+")";
 	}
 }

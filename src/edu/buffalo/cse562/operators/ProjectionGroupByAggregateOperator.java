@@ -548,6 +548,6 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 	@Override
 	public void generateSchemaName() {
 		child.generateSchemaName();
-		schema.setTableName("Agg [ " + child.getSchema().getTableName() + " ]");
+		schema.setTableName("\u03C0(G(\u03A3(" + child.getSchema().getTableName() + ")))");
 	}
 }

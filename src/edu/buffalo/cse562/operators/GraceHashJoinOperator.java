@@ -80,12 +80,10 @@ public class GraceHashJoinOperator implements Operator {
 		child2.generateSchemaName();
 		
 		schema.setTableName(
-				"(" +
 				child1.getSchema().getTableName() +
 				" \u2A1D" +
 				" {" + where + "} " +
-				child2.getSchema().getTableName() +
-				")"
+				child2.getSchema().getTableName()
 				);
 		
 	}

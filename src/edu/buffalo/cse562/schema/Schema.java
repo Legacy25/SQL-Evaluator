@@ -1,16 +1,7 @@
 package edu.buffalo.cse562.schema;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import edu.buffalo.cse562.Main;
 
 public class Schema {
 
@@ -28,26 +19,17 @@ public class Schema {
 	
 	private String tableName;
 	private String tableFile;
-	
 	private ArrayList<ColumnWithType> columns;
 	private ArrayList<ColumnWithType> primaryKey;
-	private ArrayList<ColumnWithType> foreignKeys;
-	private ArrayList<ColumnWithType> secondaryIndexes;
-	
-	private long rowCount;
 	
 	
 	public Schema(String tableName, String tableFile) {
 		this.tableName = tableName;
 		this.tableFile = tableFile;
 		
-		rowCount = 0;
-		
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
 		primaryKey = new ArrayList<ColumnWithType>();
-		foreignKeys = new ArrayList<ColumnWithType>();
-		secondaryIndexes = new ArrayList<ColumnWithType>();
 	}
 	
 	public Schema(Schema schema) {
@@ -55,39 +37,22 @@ public class Schema {
 		this.tableFile = schema.tableFile;
 		this.columns = new ArrayList<ColumnWithType>();
 		this.primaryKey = new ArrayList<ColumnWithType>();
-		this.foreignKeys = new ArrayList<ColumnWithType>();
-		this.secondaryIndexes = new ArrayList<ColumnWithType>();
-		
-		rowCount = schema.getRowCount();
 		
 		for(int i=0; i<schema.columns.size(); i++) {
 			columns.add(new ColumnWithType(schema.columns.get(i)));
 		}
-		
 		for(int i=0; i<schema.primaryKey.size(); i++) {
 			primaryKey.add(new ColumnWithType(schema.primaryKey.get(i)));
 		}
-		
-		for(ColumnWithType col : schema.getForeignKeys()) {
-			foreignKeys.add(col);
-		}
-		
-		for(ColumnWithType col : schema.getSecondaryIndexes()) {
-			secondaryIndexes.add(col);
-		}
 	}
-
+	
 	public Schema() {
 		this.tableName = "";
 		this.tableFile = "IN-MEMORY";
 		
-		rowCount = 0;
-		
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
 		primaryKey = new ArrayList<ColumnWithType>();
-		foreignKeys = new ArrayList<ColumnWithType>();
-		secondaryIndexes = new ArrayList<ColumnWithType>();
 	}
 
 	
@@ -112,6 +77,10 @@ public class Schema {
 	public ArrayList<ColumnWithType> getColumns() {
 		return columns;
 	}
+	
+	public ArrayList<ColumnWithType> getPrimaryKey() {
+		return primaryKey;
+	}
 
 	public void addColumn(ColumnWithType column) {
 		this.columns.add(column);
@@ -121,106 +90,22 @@ public class Schema {
 		this.columns.addAll(Arrays.asList(columns));
 	}
 	
-	public ColumnWithType getPrimaryKey(int i) {
-		return primaryKey.get(i);
-	}
-	
-	public ArrayList<ColumnWithType> getPrimaryKey() {
-		return primaryKey;
-	}
-	
-	public int getPrimaryKeySize() {
-		return primaryKey.size();
-	}
-	
 	public void addToPrimaryKey(ColumnWithType column) {
 		this.primaryKey.add(column);
-	}
-	
-	public ArrayList<ColumnWithType> getForeignKeys() {
-		return foreignKeys;
-	}
-	
-	public void addToForeignKeys(ColumnWithType column) {
-		this.foreignKeys.add(column);
-	}
-	
-	public ArrayList<ColumnWithType> getSecondaryIndexes() {
-		return secondaryIndexes;
-	}
-	
-	public void addToSecondaryIndexes(ColumnWithType col) {
-		secondaryIndexes.add(col);
-	}
-	
-	public int columnToIndex(ColumnWithType col) {
-		for(int i=0; i<columns.size(); i++) {
-			if(columns.get(i) == col) {
-				return i;
-			}
-		}
-		
-		return -1;
 	}
 	
 	
 	@Override
 	public String toString() {
 		/* Return a formatted string containing the schema information */
-		String result = tableName+"\n";
+		String result = "Schema for table " + tableName	+ "\nTable File: " + tableFile +"\nColumns:\n";
 		
 		for(ColumnWithType col:columns) {
-			if(foreignKeys.contains(col)) {
-				result = result + col.toString() + "(sInd) | ";
-			}
-			else if (primaryKey.contains(col)) {
-				result = result + col.toString() + "(pK) | ";
-			}
-			else {
-				result = result + col.toString() + " | ";
-			}
+			result = result + col.toString() + "\t";
 		}
 		
-		result = result.substring(0, result.length() - 2) + "\n";
+		result = result + "\n";
 		return result;
 	}
-
-	public void incrementRowCount() {
-		rowCount++;
-	}
 	
-	public void storeSchemaStatistics(File folder) {
-		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(folder+"/"+tableName, false));
-			bw.write(rowCount+"\n");
-			bw.flush();
-			bw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void loadSchemaStatistics(File folder) {
-		try {
-			BufferedReader br = new BufferedReader(new FileReader(folder+"/"+tableName));
-			rowCount = Long.parseLong(br.readLine());
-			br.close();
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			if(Main.DEBUG) {
-				System.err.println("Statistics file not found");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public long getRowCount() {
-		return rowCount;
-	}
-	
-	public void clearColumns() {
-		columns.clear();
-	}
 }

@@ -55,7 +55,7 @@ public class OrderByOperator implements Operator {
 
 	public void generateSchemaName() {
 		child.generateSchemaName();
-		schema.setTableName(child.getSchema().getTableName());
+		schema.setTableName("O(" + child.getSchema().getTableName() + ")");
 	}
 	
 

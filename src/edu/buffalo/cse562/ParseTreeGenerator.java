@@ -16,7 +16,6 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.OrderByElement;
@@ -46,7 +45,7 @@ public class ParseTreeGenerator {
 
 	/* The tables HashMap keeps a mapping of tables to their corresponding schemas */
 	private static ArrayList<Schema> tables = new ArrayList<Schema>();
-//	private static ArrayList<String> createTableStatements = new ArrayList<String>();
+	private static ArrayList<String> createTableStatements = new ArrayList<String>();
 	
 	/* Function to find a table within the provided Data Directories */
 	private static String findFile(ArrayList<String> dataDirs, String tableName) {
@@ -92,7 +91,6 @@ public class ParseTreeGenerator {
 			 * 
 			 * We only concern ourselves with two kinds of Statement - CreateTable & Select
 			 */
-
 			while((statement = parser.Statement()) != null) {
 				/*
 				 * CREATE TABLE Statement
@@ -102,18 +100,13 @@ public class ParseTreeGenerator {
 				 * be used later to process SELECT queries
 				 * 
 				 */				
-
 				if(statement instanceof CreateTable) {
-//					createTableStatements.add(statement.toString());
+					createTableStatements.add(statement.toString());
 					
 					CreateTable cTable = (CreateTable) statement;
 					
 					String tableName = cTable.getTable().toString();
 					String tableFile = findFile(dataDirs, tableName);
-					Index primaryKey = (Index) cTable.getIndexes().get(0);
-					
-					@SuppressWarnings("unchecked")
-					ArrayList<String> pKCols = (ArrayList<String>) primaryKey.getColumnsNames();
 					
 					if(tableFile == null) {
 						System.err.println("Table "+ tableName + " not found in any "
@@ -128,7 +121,7 @@ public class ParseTreeGenerator {
 								= cTable.getColumnDefinitions();
 					
 					int k = 0;
-					for(ColumnDefinition colDef : columnDefinitions) {	
+					for(ColumnDefinition colDef : columnDefinitions) {
 						String name = colDef.getColumnName().toLowerCase();
 						String type = colDef.getColDataType().getDataType().toLowerCase();
 						if(type.equalsIgnoreCase("integer")) {
@@ -142,25 +135,10 @@ public class ParseTreeGenerator {
 								);
 						k++;
 						schema.addColumn(c);
-						
-						if(pKCols.contains(name)) {
-							schema.addToPrimaryKey(c);
-						}
-						if(colDef.getColumnSpecStrings() != null) {
-							schema.addToForeignKeys(c);
-						}
 					}
-
-					schema = QueryPreprocessor.generateSecondaryIndexes(schema);
-					schema.loadSchemaStatistics(Main.indexDirectory);
 					
 					/* Store schema for later use */
 					tables.add(schema);
-					
-					if(Main.DEBUG) {
-						System.err.println(cTable);
-						System.err.println("ParseTreeGenerator generated schema: "+schema);
-					}
 				}
 				
 				/*
@@ -252,7 +230,7 @@ public class ParseTreeGenerator {
 		}
 		
 		if(fi instanceof SubJoin) {
-			
+			// TODO
 		}
 		
 		if(fi instanceof SubSelect) {
@@ -481,8 +459,14 @@ public class ParseTreeGenerator {
 	}
 	
 	
+	
+	
+	
 	public static ArrayList<Schema> getTableSchemas() {
 		return tables;
 	}
 	
+	public static ArrayList<String> getCreateTableStatements() {
+		return createTableStatements;
+	}
 }

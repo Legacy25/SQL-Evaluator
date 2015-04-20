@@ -104,7 +104,6 @@ public class CrossProductOperator implements Operator {
 	public void initialize() {
 		child1.initialize();
 		child2.initialize();
-		buildSchema();
 		generateSchemaName();
 	}
 	
