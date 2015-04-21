@@ -18,39 +18,32 @@ public class ParseTreeEvaluator {
 		parseTree.initialize();
 		
 		LeafValue res[];
-		StringBuilder output = new StringBuilder();
-		
 		/* Keep getting a tuple and displaying it till we exhaust the root operator */
 		while((res = parseTree.readOneTuple()) != null) {
-			output.append(display(res));
+			display(res);
 		}
-		
-		System.out.println(output);
 	}
 	
-	public static String display(LeafValue res[]) {
+	public static void display(LeafValue res[]) {
 		/* Formatting logic */
 		boolean flag = false;
-		StringBuilder output = new StringBuilder();
 		
 		for(int i=0; i<res.length; i++) {
 			if(flag)
-				output.append("|");
+				System.out.print("|");
 			
 			if(!flag)
 				flag = true;
 			
 			if(res[i] instanceof StringValue) {
 				String str = res[i].toString();
-				output.append(str.substring(1, str.length() - 1));				
+				System.out.print(str.substring(1, str.length() - 1));				
 			}
 			else {				
-				output.append(res[i]);
+				System.out.print(res[i]);
 			}
 		}
 		
-		output.append("\n");
-		
-		return output.toString();
+		System.out.println();
 	}
 }
