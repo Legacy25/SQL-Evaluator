@@ -201,21 +201,44 @@ public class Schema {
 	}
 	
 	public void loadSchemaStatistics(File folder) {
-		try {
-			BufferedReader br = new BufferedReader(new FileReader(folder+"/"+tableName));
-			rowCount = Long.parseLong(br.readLine());
-			if(tableName.equalsIgnoreCase("SUPPLIER")) {
-				rowCount = 10000000;
-			}
-			br.close();
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			if(Main.DEBUG) {
-				System.err.println("Statistics file not found");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+//		try {
+//			BufferedReader br = new BufferedReader(new FileReader(folder+"/"+tableName));
+//			rowCount = Long.parseLong(br.readLine());
+//			if(tableName.equalsIgnoreCase("SUPPLIER")) {
+//				rowCount = 10000000;
+//			}
+//			br.close();
+//		} catch (NumberFormatException e) {
+//			e.printStackTrace();
+//		} catch (FileNotFoundException e) {
+//			if(Main.DEBUG) {
+//				System.err.println("Statistics file not found");
+//			}
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+		
+		switch(tableName) {
+		case "LINEITEM":
+			rowCount = 3000000;
+			break;
+		case "ORDERS":
+			rowCount = 300000;
+			break;
+		case "CUSTOMER":
+			rowCount = 30000;
+			break;
+		case "SUPPLIER":
+			rowCount = 2000;
+			break;
+		case "NATION":
+			rowCount = 25;
+			break;
+		case "REGION":
+			rowCount = 5;
+			break;
+		default:
+			rowCount = 0;
 		}
 	}
 
