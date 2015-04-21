@@ -220,7 +220,7 @@ public class Schema {
 		
 		switch(tableName) {
 		case "LINEITEM":
-			rowCount = 3000000;
+			rowCount = 1199969;
 			break;
 		case "ORDERS":
 			rowCount = 300000;
@@ -229,7 +229,7 @@ public class Schema {
 			rowCount = 30000;
 			break;
 		case "SUPPLIER":
-			rowCount = 2000;
+			rowCount = 10000000;
 			break;
 		case "NATION":
 			rowCount = 25;
