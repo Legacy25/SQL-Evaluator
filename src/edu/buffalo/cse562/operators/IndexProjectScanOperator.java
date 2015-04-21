@@ -138,7 +138,7 @@ public class IndexProjectScanOperator implements Operator {
 
 			EnvironmentConfig envConfig = new EnvironmentConfig();
 			envConfig.setLocking(false);
-			envConfig.setCacheSize(893386752);
+			envConfig.setCacheSize(98304);
 			
 			DatabaseConfig dbCon = new DatabaseConfig();
 			dbCon.setReadOnly(true);
@@ -224,47 +224,46 @@ public class IndexProjectScanOperator implements Operator {
 		
 		int k = 0;
 		for(int i=0; i<selectedCols.length; i++) {
-			String sValue = null;
-			Long lValue = null;
-			Double dValue = null;
 			String c = oldSchema.getColumns().get(i).getColumnType();
 			
-			switch(c) {
-			case "int":
-				lValue = dis.readLong();
-				break;
-			
-			case "decimal":
-				dValue = dis.readDouble();
-				break;
-			
-			case "char":
-			case "varchar":
-			case "string":
-			case "date":
-				sValue = dis.readUTF();
-				break;
-			}
 			if(selectedCols[i]) {
 				switch(c) {
 				case "int":
-					newTuple[k] = new LongValue(lValue);
+					newTuple[k] = new LongValue(dis.readLong());
 					break;
 				
 				case "decimal":
-					newTuple[k] = new DoubleValue(dValue);
+					newTuple[k] = new DoubleValue(dis.readDouble());
 					break;
 				
 				case "char":
 				case "varchar":
 				case "string":
-					newTuple[k] = new StringValue(sValue);
+					newTuple[k] = new StringValue(dis.readUTF());
 					break;
 				case "date":
-					newTuple[k] = new DateValue(sValue);
+					newTuple[k] = new DateValue(dis.readUTF());
 					break;
 				}
 				k++;
+			}
+			else {
+				switch(c) {
+				case "int":
+					dis.readLong();
+					break;
+				
+				case "decimal":
+					dis.readDouble();
+					break;
+				
+				case "char":
+				case "varchar":
+				case "string":
+				case "date":
+					dis.readUTF();
+					break;
+				}
 			}
 		}
 		
