@@ -83,3 +83,4 @@ testdata
 bin/
 swap/
 bdb/
+sql/
