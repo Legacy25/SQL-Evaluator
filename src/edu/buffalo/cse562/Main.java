@@ -63,11 +63,11 @@ public class Main {
 				dataDirs.add(args[i+1]);
 				i++;
 			}
-			else if(args[i].equalsIgnoreCase("--swap")) {
-				swapDirectory = new File(args[i+1]);
-				memoryLimitsOn = true;
-				i++;
-			}
+//			else if(args[i].equalsIgnoreCase("--swap")) {
+//				swapDirectory = new File(args[i+1]);
+//				memoryLimitsOn = true;
+//				i++;
+//			}
 			else if(args[i].equalsIgnoreCase("--db")) {
 				indexDirectory = new File(args[i+1]);
 				i++;
@@ -83,15 +83,15 @@ public class Main {
 			}
 		}
 		
-		if(swapDirectory != null) {
-			for(File f:swapDirectory.listFiles()) {
-				try {
-					Files.deleteIfExists(f.toPath());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+//		if(swapDirectory != null) {
+//			for(File f:swapDirectory.listFiles()) {
+//				try {
+//					Files.deleteIfExists(f.toPath());
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		}
 		
 		if(preprocessingOn) {
 			
@@ -137,7 +137,7 @@ public class Main {
 		 * This code should be commented out before
 		 * commits for submissions.
 		 */
-		long start = System.nanoTime();
+//		long start = System.nanoTime();
 		
 		/* The generated list of parse-trees, one for each query */
 		ArrayList<Operator> parseTreeList = new ArrayList<Operator>();
@@ -152,30 +152,30 @@ public class Main {
 //			parseTreeList.set(i, IndexOptimizer.optimize(parseTree));
 		}
 		
-		long generateTime = System.nanoTime();
+//		long generateTime = System.nanoTime();
 		
 		/* Evaluate each parse-tree */
 		for(int i=0; i< parseTreeList.size(); i++) {
 			
 			/* DEBUG */
 			/* Show the optimized Query Plan */
-			if(parseTreeList.get(i) != null) {
-				if(Main.DEBUG) {
-					System.err.println(
-							parseTreeList.get(i).getSchema()
-							);
-				}
+//			if(parseTreeList.get(i) != null) {
+//				if(Main.DEBUG) {
+//					System.err.println(
+//							parseTreeList.get(i).getSchema()
+//							);
+//				}
 				
 				ParseTreeEvaluator.evaluate(parseTreeList.get(i));
-			}
+//			}
 		}
 		
 		/* DEBUG */
 		/* Show query times */
-		if(Main.DEBUG) {
-			System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
-			System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
-		}
+//		if(Main.DEBUG) {
+//			System.err.println("\nGENERATE TIME: "+((double)(generateTime - start)/1000000000)+"s");
+//			System.err.println("\nQUERY TIME: "+((double)(System.nanoTime() - generateTime)/1000000000)+"s");
+//		}
 		
 	}
 }
