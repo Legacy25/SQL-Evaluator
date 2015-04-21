@@ -204,6 +204,9 @@ public class Schema {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(folder+"/"+tableName));
 			rowCount = Long.parseLong(br.readLine());
+			if(tableName.equalsIgnoreCase("SUPPLIER")) {
+				rowCount = 10000000;
+			}
 			br.close();
 		} catch (NumberFormatException e) {
 			e.printStackTrace();

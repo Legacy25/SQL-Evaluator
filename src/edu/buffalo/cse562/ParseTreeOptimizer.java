@@ -14,6 +14,7 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.AllColumns;
@@ -78,12 +79,15 @@ public class ParseTreeOptimizer {
 		/* Replace Selection over Cross Product with appropriate Join */
 		parseTree = findJoinPatternAndReplace(parseTree);
 				
-				
 		/* Reorder Cross Products to facilitate more joins */
 		parseTree = reOrderCrossProducts(parseTree);
 
 		/* Replace Selection over Cross Product with appropriate Join */
-		parseTree = findJoinPatternAndReplace(parseTree);
+		parseTree = findJoinPatternAndReplace1(parseTree);
+		
+
+		/* Decompose Select Clauses and push them down appropriately */
+		parseTree = initialSelectionDecomposition(parseTree);
 
 		/* Replace Selection over Cross Product with appropriate Join */
 		if(Main.memoryLimitsOn) {
@@ -99,6 +103,122 @@ public class ParseTreeOptimizer {
 		
 	}
 	
+	private static Operator findJoinPatternAndReplace1(Operator parseTree) {
+		if(parseTree == null) {
+			/* Leaf Node */
+			return null;
+		}
+		
+		/* Recursively traverse the entire tree in order */
+		parseTree.setLeft(findJoinPatternAndReplace1(parseTree.getLeft()));
+		parseTree.setRight(findJoinPatternAndReplace1(parseTree.getRight()));
+
+		if(parseTree instanceof SelectionOperator) {
+			SelectionOperator select = (SelectionOperator) parseTree;
+			Expression where = select.getWhere();
+			
+			Operator child = select.getLeft();
+			Operator leftChild = child.getLeft();
+			Operator rightChild = child.getRight();
+
+			if(child instanceof CrossProductOperator) {
+				/* Pattern Matched, replace it with Join */
+
+				ArrayList<Expression> joinPredicates = new ArrayList<Expression>();
+				ArrayList<Expression> clauseList = new ArrayList<Expression>();
+				
+				if(where instanceof AndExpression) {
+					clauseList = splitAndClauses(where);
+					
+					for(int i=0; i<clauseList.size(); i++) {
+						Expression clause = clauseList.get(i);
+						if(isJoinCondition1(clause, leftChild, rightChild)
+								//&& consistent(clause, joinPredicates)
+								) {
+							joinPredicates.add(clause);
+							clauseList.remove(clause);
+						}
+					}
+				}
+				else {
+					joinPredicates.add(where);
+				}
+				
+				/* Pretty sure that joinPredicates will have at least
+				 * one member, but we still check for it
+				 */
+				
+				if(!clauseList.isEmpty()) {
+					parseTree = new SelectionOperator(
+							mergeClauses(clauseList),
+							parseTree
+							);
+					if(!joinPredicates.isEmpty()) {
+						parseTree.setLeft(new GraceHashJoinOperator(
+							mergeClauses(joinPredicates) ,
+							leftChild ,
+							rightChild
+							)
+						);
+					}
+				} 
+				else if(!joinPredicates.isEmpty()) {
+					parseTree = new GraceHashJoinOperator(
+							mergeClauses(joinPredicates) ,
+							leftChild ,
+							rightChild
+							);
+				}
+			}
+			else if(child instanceof GraceHashJoinOperator) {
+				if(isJoinCondition1(where, leftChild, rightChild)) {
+					GraceHashJoinOperator joinOp = (GraceHashJoinOperator) child;
+					joinOp.appendWhere(where);
+					parseTree = joinOp;
+				}
+					
+			}
+		}
+		
+		return parseTree;
+	}
+
+	private static boolean isJoinCondition1(Expression e,
+			Operator leftChild, Operator rightChild) {
+		
+		if(e instanceof BinaryExpression) {
+			BinaryExpression be = (BinaryExpression) e;
+			if(!(be instanceof EqualsTo) 
+					|| !(be.getLeftExpression() instanceof Column)
+					|| !(be.getRightExpression() instanceof Column))
+				return false;
+			
+			if(!(leftChild instanceof GraceHashJoinOperator && rightChild instanceof GraceHashJoinOperator)) {
+				return false;
+			}
+			
+			Column left = (Column) be.getLeftExpression();
+			Column right = (Column) be.getRightExpression();
+			
+			String leftColTableName = left.getTable().getName();
+			String rightColTableName = right.getTable().getName();
+			
+			if(leftChild.getSchema().getTableName().contains(leftColTableName)
+					&& rightChild.getSchema().getTableName().contains(rightColTableName)
+					) {
+				return true;
+			}
+			
+			if(leftChild.getSchema().getTableName().contains(rightColTableName)
+					&& rightChild.getSchema().getTableName().contains(leftColTableName)
+					) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
 	private static Operator reOrderJoins(Operator parseTree) {
 		if(parseTree == null) {
 			return null;
@@ -298,37 +418,39 @@ public class ParseTreeOptimizer {
 		
 		if(parseTree instanceof SelectionOperator) {
 			SelectionOperator select = (SelectionOperator) parseTree;
-			Expression where = select.getWhere();
+			Expression w = select.getWhere();
+			ArrayList<Expression> clauseList = splitAndClauses(w);
 			
-			if(isJoinPredicate(where)) {
-				if(select.getLeft() instanceof GraceHashJoinOperator) {
-					Operator cpOperatorParent = findCrossProduct(select);
-					if(cpOperatorParent != null) {
-						CrossProductOperator cpOperator = 
-								(CrossProductOperator) cpOperatorParent.getLeft();
-						
-						Operator newCrossProduct = null;
-						
-						if(relationIsLeftOfCrossProduct(where, cpOperator)) {
-							cpOperatorParent.setLeft(cpOperator.getRight());
+			for(Expression where : clauseList) {
+				if(isJoinPredicate(where)) {
+					if(select.getLeft() instanceof GraceHashJoinOperator) {
+						Operator cpOperatorParent = findCrossProduct(select);
+						if(cpOperatorParent != null) {
+							CrossProductOperator cpOperator = 
+									(CrossProductOperator) cpOperatorParent.getLeft();
 							
-							newCrossProduct = new CrossProductOperator(
-									select.getLeft() ,
-									cpOperator.getLeft()
-									);
-						}
-						else {
-							cpOperatorParent.setLeft(cpOperator.getLeft());
+							Operator newCrossProduct = null;
 							
-							newCrossProduct = new CrossProductOperator(
-									select.getLeft() ,
-									cpOperator.getRight()
-									);
-						}
+							if(relationIsLeftOfCrossProduct(where, cpOperator)) {
+								cpOperatorParent.setLeft(cpOperator.getRight());
+								
+								newCrossProduct = new CrossProductOperator(
+										cpOperator.getLeft(),
+										select.getLeft()
+										);
+							}
+							else {
+								cpOperatorParent.setLeft(cpOperator.getLeft());
+								
+								newCrossProduct = new CrossProductOperator(
+										cpOperator.getRight(),
+										select.getLeft()
+										);
+							}
 
-						
-						parseTree.setLeft(newCrossProduct);
-						parseTree = findJoinPatternAndReplace(parseTree);
+							
+							parseTree.setLeft(newCrossProduct);
+						}
 					}
 				}
 			}
@@ -488,13 +610,11 @@ public class ParseTreeOptimizer {
 		belongsToSchema(Schema left, Schema right, Column column) {
 		
 		for(Column col : left.getColumns()) {
-			String debug = column.getWholeColumnName()+"|"+col.getWholeColumnName();
 			if(column.getWholeColumnName().equalsIgnoreCase(col.getWholeColumnName()))
 				return ClauseApplicability.LEFT;
 		}
 		
 		for(Column col : right.getColumns()) {
-			String debug = column.getWholeColumnName()+"|"+col.getWholeColumnName();
 			if(column.getWholeColumnName().equalsIgnoreCase(col.getWholeColumnName()))
 				return ClauseApplicability.RIGHT;
 		}
@@ -513,10 +633,9 @@ public class ParseTreeOptimizer {
 			SelectionOperator select = (SelectionOperator) parseTree;
 			Operator child = select.getLeft();
 			
-			if(child instanceof CrossProductOperator) {
-				CrossProductOperator crossProduct = (CrossProductOperator) child;
-				Operator crossProductLeftChild = crossProduct.getLeft();
-				Operator crossProductRightChild = crossProduct.getRight();
+			if(child instanceof CrossProductOperator || child instanceof GraceHashJoinOperator) {
+				Operator crossProductLeftChild = child.getLeft();
+				Operator crossProductRightChild = child.getRight();
 				
 				ArrayList<Expression> clauseList = splitAndClauses(select.getWhere());
 				
@@ -551,20 +670,20 @@ public class ParseTreeOptimizer {
 				
 				if(!leftList.isEmpty()) {
 					Expression where = mergeClauses(leftList);
-					crossProduct.setLeft(new SelectionOperator(where, crossProductLeftChild));
+					child.setLeft(new SelectionOperator(where, crossProductLeftChild));
 				}
 				
 				if(!rightList.isEmpty()) {
 					Expression where = mergeClauses(rightList);
-					crossProduct.setRight(new SelectionOperator(where, crossProductRightChild));
+					child.setRight(new SelectionOperator(where, crossProductRightChild));
 				}
 				
 				if(!parentList.isEmpty()) {
 					Expression where = mergeClauses(parentList);
-					parseTree = new SelectionOperator(where, crossProduct);
+					parseTree = new SelectionOperator(where, child);
 				}
 				else {
-					parseTree = crossProduct;
+					parseTree = child;
 				}
 				
 				if(!invalidList.isEmpty()) {
@@ -608,17 +727,21 @@ public class ParseTreeOptimizer {
 			/* Leaf Node */
 			return null;
 		}
+		
+		/* Recursively traverse the entire tree in order */
+		parseTree.setLeft(findJoinPatternAndReplace(parseTree.getLeft()));
+		parseTree.setRight(findJoinPatternAndReplace(parseTree.getRight()));
 
 		if(parseTree instanceof SelectionOperator) {
 			SelectionOperator select = (SelectionOperator) parseTree;
 			Expression where = select.getWhere();
 			
 			Operator child = select.getLeft();
+			Operator leftChild = child.getLeft();
+			Operator rightChild = child.getRight();
 
 			if(child instanceof CrossProductOperator) {
 				/* Pattern Matched, replace it with Join */
-				Operator leftChild = child.getLeft();
-				Operator rightChild = child.getRight();
 
 				ArrayList<Expression> joinPredicates = new ArrayList<Expression>();
 				ArrayList<Expression> clauseList = new ArrayList<Expression>();
@@ -628,7 +751,7 @@ public class ParseTreeOptimizer {
 					
 					for(int i=0; i<clauseList.size(); i++) {
 						Expression clause = clauseList.get(i);
-						if(isJoinPredicate(clause)
+						if(isJoinCondition(clause, leftChild, rightChild)
 								//&& consistent(clause, joinPredicates)
 								) {
 							joinPredicates.add(clause);
@@ -667,7 +790,7 @@ public class ParseTreeOptimizer {
 				}
 			}
 			else if(child instanceof GraceHashJoinOperator) {
-				if(isJoinPredicate(where)) {
+				if(isJoinCondition(where, leftChild, rightChild)) {
 					GraceHashJoinOperator joinOp = (GraceHashJoinOperator) child;
 					joinOp.appendWhere(where);
 					parseTree = joinOp;
@@ -676,13 +799,44 @@ public class ParseTreeOptimizer {
 			}
 		}
 		
-		/* Recursively traverse the entire tree in order */
-		parseTree.setLeft(findJoinPatternAndReplace(parseTree.getLeft()));
-		parseTree.setRight(findJoinPatternAndReplace(parseTree.getRight()));
-		
 		return parseTree;
 	}
 	
+	private static boolean isJoinCondition(Expression e,
+			Operator leftChild, Operator rightChild) {
+		
+		if(e instanceof BinaryExpression) {
+			BinaryExpression be = (BinaryExpression) e;
+			if(!(be instanceof EqualsTo) 
+					|| !(be.getLeftExpression() instanceof Column)
+					|| !(be.getRightExpression() instanceof Column))
+				return false;
+			
+			if(leftChild instanceof ProjectScanOperator && rightChild instanceof ProjectScanOperator) {
+				return true;
+			}
+			
+			Column left = (Column) be.getLeftExpression();
+			Column right = (Column) be.getRightExpression();
+			
+			String leftColTableName = left.getTable().getName();
+			String rightColTableName = right.getTable().getName();
+			
+			if(rightColTableName.equalsIgnoreCase(rightChild.getSchema().getTableName())) {
+				if(leftColTableName.equalsIgnoreCase(leftChild.getRight().getSchema().getTableName())) {
+					return true;
+				}
+			}
+			else if(leftColTableName.equalsIgnoreCase(rightChild.getSchema().getTableName())) {
+				if(rightColTableName.equalsIgnoreCase(leftChild.getRight().getSchema().getTableName())) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+
 	public static ArrayList<Expression> splitAndClauses(Expression e) {
 	  
 		ArrayList<Expression> ret = new ArrayList<Expression>();
