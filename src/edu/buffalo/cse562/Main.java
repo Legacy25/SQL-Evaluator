@@ -125,7 +125,7 @@ public class Main {
 			ArrayList<Schema> tables = ParseTreeGenerator.getTableSchemas();
 			for(Schema s:tables) {
 				QueryPreprocessor.buildIndex(s);
-				s.storeSchemaStatistics(indexDirectory);
+//				s.storeSchemaStatistics(indexDirectory);
 			}
 			
 			return;
@@ -149,7 +149,7 @@ public class Main {
 		for(int i=0; i< parseTreeList.size(); i++) {
 			Operator parseTree = parseTreeList.get(i);
 			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
-//			parseTreeList.set(i, IndexOptimizer.optimize(parseTree));
+			parseTreeList.set(i, IndexOptimizer.optimize(parseTree));
 		}
 		
 		long generateTime = System.nanoTime();

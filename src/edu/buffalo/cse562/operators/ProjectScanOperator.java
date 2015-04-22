@@ -113,6 +113,12 @@ public class ProjectScanOperator implements Operator {
 			return null;
 		}
 		
+		return constructTuple(line);
+		
+		
+	}
+
+	public LeafValue[] constructTuple(String line) {
 		/* Split the tuple into attributes using the '|' delimiter */
 		String cols[] = line.split("\\|");
 		
@@ -160,7 +166,7 @@ public class ProjectScanOperator implements Operator {
 		/* Return the generated tuple */
 		return ret;
 	}
-
+	
 	@Override
 	public void reset() {
 		

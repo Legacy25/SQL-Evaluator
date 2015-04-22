@@ -1,9 +1,14 @@
 package edu.buffalo.cse562.operators;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +39,7 @@ import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.Main;
 import edu.buffalo.cse562.ParseTreeOptimizer;
+import edu.buffalo.cse562.QueryPreprocessor;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
@@ -43,21 +49,14 @@ public class IndexProjectScanOperator implements Operator {
 	private Schema newSchema;
 	private Expression where;
 	private Column col;
+	private String filePrefix;
 	private ArrayList<LeafValue> literalValues;
-	private ArrayList<DatabaseEntry> searchKeys;
+	private ArrayList<String> searchKeys;
 	private int keyIndex;
-	private OperationStatus status;
-	private DatabaseEntry key;
-	private DatabaseEntry val;
 	
+	private BufferedReader br;
 	
 	private boolean[] selectedCols;
-	
-	
-	private Environment db;
-	private Database table;
-	private SecondaryDatabase index;
-	private SecondaryCursor sCursor;
 	
 	
 	public IndexProjectScanOperator(Schema oldSchema, Schema newSchema, Expression where) {
@@ -65,14 +64,8 @@ public class IndexProjectScanOperator implements Operator {
 		this.newSchema = newSchema;
 		this.where = where;
 		
-		db = null;
-		table = null;
-		sCursor = null;
-		key = null;
-		val = null;
-		
 		literalValues = new ArrayList<LeafValue>();
-		searchKeys = new ArrayList<DatabaseEntry>();
+		searchKeys = new ArrayList<String>();
 		
 		if(where instanceof Parenthesis) {
 			Expression e = ((Parenthesis) where).getExpression();
@@ -89,6 +82,12 @@ public class IndexProjectScanOperator implements Operator {
 			col = (Column) be.getLeftExpression();
 			literalValues.add((LeafValue) be.getRightExpression());
 		}
+		
+		keyIndex = 0;
+		br = null;
+		filePrefix = Main.indexDirectory+"/"
+				+oldSchema.getTableName()+".Secondary."
+				+col.getColumnName()+".";
 		
 		selectedCols = new boolean[oldSchema.getColumns().size()];
 		Arrays.fill(selectedCols, false);
@@ -127,153 +126,111 @@ public class IndexProjectScanOperator implements Operator {
 	public void initialize() {
 		
 		for(LeafValue l : literalValues) {
-			searchKeys.add(getSearchKey(l));
+			searchKeys.add(QueryPreprocessor.keyToFile(l));
 		}
 		
-		keyIndex = 0;
-		key = searchKeys.get(0);
-		val = new DatabaseEntry();
-		
 		try {
-
-			EnvironmentConfig envConfig = new EnvironmentConfig();
-			envConfig.setLocking(false);
-			envConfig.setCacheSize(98304);
-			
-			DatabaseConfig dbCon = new DatabaseConfig();
-			dbCon.setReadOnly(true);
-
-			db = new Environment(Main.indexDirectory, envConfig);
-			table = db.openDatabase(null, oldSchema.getTableName(), dbCon);
-			
-				
-			SecondaryConfig sCon = new SecondaryConfig();
-			sCon.setSortedDuplicates(true);
-			
-			CursorConfig sCurCon = new CursorConfig();
-			sCurCon.setReadUncommitted(true);
-			
-			index = db.openSecondaryDatabase(null, col.getColumnName(), table, sCon);
-			sCursor = index.openSecondaryCursor(null, sCurCon);
-			
-
-			status = sCursor.getSearchKey(key, val, LockMode.READ_UNCOMMITTED);
-			
-		} catch (DatabaseException e) {
+			br = new BufferedReader(new FileReader(new File(filePrefix+searchKeys.get(keyIndex)+".dat")));
+		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-			closeAll();
-		} 
-				
+		}
 	}
 
 	@Override
 	public LeafValue[] readOneTuple() {
-		
-		try {
-			if(status == OperationStatus.SUCCESS) {
-				LeafValue[] output = constructTuple(val);
-				status = sCursor.getNextDup(key, val, LockMode.READ_UNCOMMITTED);
-				return output;
-			}
-			else {
-				while(true) {
-					keyIndex++;
-					if(keyIndex >= searchKeys.size()) {
-						break;
-					}
-					
-					key = searchKeys.get(keyIndex);
-					status = sCursor.getSearchKey(key, val, LockMode.READ_UNCOMMITTED);
-					if(status == OperationStatus.SUCCESS) {
-						return readOneTuple();
-					}
-				}
-			}
-
-			closeAll();
-			return null;
-		} catch(IOException e) {
-			e.printStackTrace();
-			
-			closeAll();
+		if(br == null) {
 			return null;
 		}
+
+		String line = null;
+		try {
+			line = br.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		if(line == null) {
+			keyIndex++;
+			
+			if(keyIndex >= searchKeys.size()) {
+				return null;
+			}
+			
+			try {
+				br = new BufferedReader(new FileReader(new File(filePrefix+searchKeys.get(keyIndex)+".dat")));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+			
+			return readOneTuple();
+		}
+		
+		return constructTuple(line);
 	}
 	
-	private void closeAll() {
-		if(sCursor != null) {
-			sCursor.close();
-		}
-		if(index != null) {
-			index.close();
-		}
-		if(table != null) {
-			table.close();
-		}
-		if(db != null) {
-			db.close();
-		}
+	public LeafValue[] constructTuple(String line) {
+		/* Split the tuple into attributes using the '|' delimiter */
+		String cols[] = line.split("\\|");
 		
-	}
-
-	private LeafValue[] constructTuple(DatabaseEntry val) throws IOException {
-		ByteArrayInputStream in = new ByteArrayInputStream(val.getData());
-		DataInputStream dis = new DataInputStream(in);
+		/* LeafValue array that will hold the tuple to be returned */
+		LeafValue ret[] = new LeafValue[newSchema.getColumns().size()];
 		
-		LeafValue[] newTuple = new LeafValue[newSchema.getColumns().size()];
-		
+		/* 
+		 * Iterate over each column according to schema's type information
+		 * and populate the ret array with appropriate value and LeafValue
+		 * type
+		 */
 		int k = 0;
-		for(int i=0; i<selectedCols.length; i++) {
-			String c = oldSchema.getColumns().get(i).getColumnType();
-			
+		for(int i=0; i<cols.length; i++) {
 			if(selectedCols[i]) {
-				switch(c) {
+				String type = oldSchema.getColumns().get(i).getColumnType();
+				
+				switch(type) {
 				case "int":
-					newTuple[k] = new LongValue(dis.readLong());
+					ret[k] = new LongValue(cols[i]);
 					break;
 				
 				case "decimal":
-					newTuple[k] = new DoubleValue(dis.readDouble());
+					ret[k] = new DoubleValue(cols[i]);
 					break;
 				
 				case "char":
 				case "varchar":
 				case "string":
-					newTuple[k] = new StringValue(dis.readUTF());
+					/* Blank spaces are appended to account for JSQLParser's weirdness */
+					ret[k] = new StringValue(" "+cols[i]+" ");
 					break;
+
 				case "date":
-					newTuple[k] = new DateValue(dis.readUTF());
+					/* Same deal as string */
+					ret[k] = new DateValue(" "+cols[i]+" ");
 					break;
+				default:
+					System.err.println("Unknown column type");
 				}
+				
 				k++;
 			}
-			else {
-				switch(c) {
-				case "int":
-					dis.readLong();
-					break;
-				
-				case "decimal":
-					dis.readDouble();
-					break;
-				
-				case "char":
-				case "varchar":
-				case "string":
-				case "date":
-					dis.readUTF();
-					break;
-				}
-			}
 		}
 		
-		return newTuple;
+		/* Return the generated tuple */
+		return ret;
+	}
+	
+	private void close() {
+		if(br != null) {
+			try {
+				br.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	@Override
 	public void reset() {
 		
-		closeAll();
+		close();
 		initialize();
 				
 	}

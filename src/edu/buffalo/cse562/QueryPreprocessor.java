@@ -1,118 +1,129 @@
 package edu.buffalo.cse562;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Date;
 import java.util.ArrayList;
+import java.util.HashMap;
 
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.EnvironmentConfig;
-import com.sleepycat.je.SecondaryConfig;
-import com.sleepycat.je.SecondaryDatabase;
-
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
+import net.sf.jsqlparser.expression.LeafValue;
+import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
+import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.StringValue;
+import edu.buffalo.cse562.operators.ScanOperator;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
 public class QueryPreprocessor {
 	
 	
+	
 	/* Build the indexes for all the schemas */
 	public static void buildIndex(Schema s) {
 		
-		/* Initializations */
-		Environment db = null;
-		Database table = null;
-		ArrayList<SecondaryDatabase> indexes = new ArrayList<SecondaryDatabase>();
+		String file = null;
+		HashMap<String, BufferedWriter> openFiles
+										= new HashMap<String, BufferedWriter>();
 		
-		try {
+		/* Secondary indices */
+		for(ColumnWithType col : s.getSecondaryIndexes()) {
+			file = Main.indexDirectory+"/"
+							+s.getTableName()+".Secondary."
+							+col.getColumnName()+".";
 			
-			/* File read initializations */
-			BufferedReader br = new BufferedReader(new FileReader(new File(s.getTableFile())));
-			String line = null;
+			ScanOperator scanner = new ScanOperator(s);
+			scanner.initialize();
+			LeafValue[] tuple = null;
+			BufferedWriter bw = null;
+			int pos = col.getColumnNumber();
 			
-			/* Environment Configuration */
-			EnvironmentConfig envConfig = new EnvironmentConfig();
-			envConfig.setAllowCreate(true);
-			envConfig.setLocking(false);
-
-			/* Database Configuration */
-			DatabaseConfig dbConfig = new DatabaseConfig();
-			dbConfig.setAllowCreate(true);
-
-			db = new Environment(Main.indexDirectory, envConfig);
-			table = db.openDatabase(null, s.getTableName(), dbConfig);
-			
-			/*Secondary Database */
-			SecondaryConfig secCon = new SecondaryConfig();
-			secCon.setAllowCreate(true);
-			secCon.setAllowPopulate(true);
-			secCon.setSortedDuplicates(true);
-			
-			for(int i = 0; i<s.getSecondaryIndexes().size(); i++) {
-				secCon.setKeyCreator(new DynamicKeyCreator(s, s.getSecondaryIndexes().get(i)));
-				SecondaryDatabase secTable = 
-						db.openSecondaryDatabase(
-								null, s.getSecondaryIndexes().get(i).getColumnName(), table, secCon);
+			while((tuple = scanner.readOneTuple()) != null) {
 				
-				indexes.add(secTable);
-			}
-			
-			while( (line = br.readLine()) != null ) {
+				LeafValue key = tuple[pos];
+				String keysCorrespondingFile = keyToFile(key);
 				
-				gatherStatistics(line, s);
-				
-				ByteArrayOutputStream keyOut = getKeyByteArrayFromLine(line, s);
-				ByteArrayOutputStream valOut = getValByteArrayFromLine(line, s);
-				
-				DatabaseEntry key = new DatabaseEntry(keyOut.toByteArray());
-				DatabaseEntry val = new DatabaseEntry(valOut.toByteArray());
-				
-				table.put(null, key, val);
-			}
-			
-			br.close();
-			
-		}
-		catch (DatabaseException | IOException e) {
-			e.printStackTrace();
-		}
-		finally {
-			/* Close everything */
-			for(SecondaryDatabase sD : indexes) {
-				if(Main.DEBUG) {
-					System.err.println("Secondary index buit for "+s.getTableName()+" for column "+sD.getDatabaseName());
+				if(openFiles.containsKey(keysCorrespondingFile)) {
+					bw = openFiles.get(keysCorrespondingFile);
 				}
-				sD.close();
-			}
-			if(table != null) {
-				table.close();
-			}
-			if(db != null) {
-				db.close();
+				else {
+					try {
+						bw = new BufferedWriter(new FileWriter(
+								new File(file+keysCorrespondingFile+".dat"), true));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					openFiles.put(keysCorrespondingFile, bw);
+				}
+				
+				try {
+					bw.write(scanner.getString()+"\n");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 			
-			/* DEBUG */
+			try {
+				for(String key : openFiles.keySet()) {
+					openFiles.get(key).flush();
+					openFiles.get(key).close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			openFiles.clear();
+			
 			if(Main.DEBUG) {
-				System.err.println("Primary index buit for "+s.getTableName());
+				System.err.println("Secondary index buit for "+s.getTableName()
+						+" for solumn "+col.getColumnName());
 			}
 		}
+		
+			
+		/* DEBUG */
+//		if(Main.DEBUG) {
+//			System.err.println("Primary index buit for "+s.getTableName());
+//		}
 	}
-	
-	
 
 
 
+	@SuppressWarnings("deprecation")
+	public static String keyToFile(LeafValue key) {
 
-	private static void gatherStatistics(String line, Schema s) {
-		s.incrementRowCount();
+		if(key instanceof LongValue) {
+			try {
+				long val = key.toLong();
+				long ret = val % 10000;
+				return String.valueOf(ret);
+			} catch (InvalidLeaf e) {
+				e.printStackTrace();
+			}
+		}
+		else if(key instanceof DoubleValue) {
+			try {
+				double val = key.toDouble();
+				long ret = (long) (val % 10000);
+				return String.valueOf(ret);
+			} catch (InvalidLeaf e) {
+				e.printStackTrace();
+			}
+		}
+		else if(key instanceof DateValue) {
+			Date date = ((DateValue) key).getValue();
+			return date.getYear()+"."+date.getMonth();
+		}
+		else if(key instanceof StringValue) {
+			return key.toString().replace('\'', ' ').trim();
+		}
+		
+		return null;
 	}
+
 	
 	
 	
@@ -120,69 +131,6 @@ public class QueryPreprocessor {
 	/*
 	 * Helpers
 	 */
-	public static ByteArrayOutputStream getKeyByteArrayFromLine(String line,
-			Schema s) throws NumberFormatException, IOException {
-		
-		String[] tuple = line.split("\\|");
-		
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(out);
-		
-		for(int i=0; i<tuple.length; i++) {
-			if(s.getPrimaryKey().contains(s.getColumns().get(i))) {
-				writeToDataOutputStream(dos, tuple, i, s);
-			}
-		}
-		
-		return out;
-	}
-
-
-	public static ByteArrayOutputStream getValByteArrayFromLine(
-			String line, Schema s) throws NumberFormatException, IOException {
-		
-		String[] tuple = line.split("\\|");
-		
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(out);
-		
-		for(int i=0; i<tuple.length; i++) {
-			writeToDataOutputStream(dos, tuple, i, s);
-		}
-		
-		return out;
-	}
-	
-	
-
-	
-	private static void writeToDataOutputStream(DataOutputStream dos,
-			String[] tuple, int i, Schema s) throws NumberFormatException, IOException {
-		
-		switch(s.getColumns().get(i).getColumnType()) {
-		case "int":
-			dos.writeLong(Integer.parseInt(tuple[i]));
-			break;
-		
-		case "decimal":
-			dos.writeDouble(Double.parseDouble(tuple[i]));
-			break;
-		
-		case "char":
-		case "varchar":
-		case "string":
-		case "date":
-			dos.writeUTF(" "+tuple[i]+" ");
-			break;
-		}
-		
-	}
-
-
-
-
-
-
 	public static Schema generateSecondaryIndexes(Schema s) {
 		String name = s.getTableName();
 		ArrayList<ColumnWithType> columns = s.getColumns();
@@ -193,7 +141,7 @@ public class QueryPreprocessor {
 			s.addToSecondaryIndexes(columns.get(14));
 			break;
 		case "ORDERS":
-
+	
 			break;
 		case "CUSTOMER":
 			s.addToSecondaryIndexes(columns.get(6));
@@ -208,7 +156,7 @@ public class QueryPreprocessor {
 			
 			break;
 		}
-		
+	
 		return s;
 	}
 }

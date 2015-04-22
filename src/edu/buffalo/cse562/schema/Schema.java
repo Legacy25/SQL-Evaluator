@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.Main;
 
 public class Schema {
@@ -163,6 +164,15 @@ public class Schema {
 		return -1;
 	}
 	
+	public int columnToIndex(Column col) {
+		for(ColumnWithType c : columns) {
+			if(col.getColumnName().equalsIgnoreCase(c.getColumnName())) {
+				return c.getColumnNumber();
+			}
+		}
+		
+		return -1;
+	}
 	
 	@Override
 	public String toString() {
@@ -190,14 +200,14 @@ public class Schema {
 	}
 	
 	public void storeSchemaStatistics(File folder) {
-		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(folder+"/"+tableName, false));
-			bw.write(rowCount+"\n");
-			bw.flush();
-			bw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			BufferedWriter bw = new BufferedWriter(new FileWriter(folder+"/"+tableName+".stat", false));
+//			bw.write(rowCount+"\n");
+//			bw.flush();
+//			bw.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 	
 	public void loadSchemaStatistics(File folder) {

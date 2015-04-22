@@ -35,6 +35,8 @@ public class ScanOperator implements Operator {
 	private FileReader fr;
 
 	
+	private String line;
+	
 	public ScanOperator(Schema schema) {		
 		/* 
 		 * Get the initial schema,
@@ -50,6 +52,8 @@ public class ScanOperator implements Operator {
 		 * creation
 		 */
 		f = new File(schema.getTableFile());
+		
+		line = null;
 	}
 	
 	public void generateSchemaName() {
@@ -82,7 +86,6 @@ public class ScanOperator implements Operator {
 			return null;
 		}
 
-		String line = null;
 		try {
 			/* Read the next '|' delimited line which is the
 			 * next tuple
@@ -178,6 +181,10 @@ public class ScanOperator implements Operator {
 	@Override
 	public void setRight(Operator o) {
 
+	}
+
+	public String getString() {
+		return line;
 	}
 
 }
