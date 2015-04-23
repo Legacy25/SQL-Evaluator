@@ -1,12 +1,12 @@
 package edu.buffalo.cse562.operators;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LeafValue;
+import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.ParseTreeOptimizer;
@@ -37,12 +37,13 @@ public class GraceHashJoinOperator implements Operator {
 	private ArrayList<LeafValue[]> tempList;		/* Temporary list that holds the joined tuples */
 	
 	/* Hashes for the children's keys */
-	private HashMap<String, ArrayList<LeafValue []>> hash;
+	private HashMap<Long, ArrayList<LeafValue []>> hash;
 	
 	/* Boolean array that contains selected columns for both relations */
-	private boolean[] selectedCols1;
-	private boolean[] selectedCols2;
-	
+	private int selectedCols1;
+	private int selectedCols2;
+	private int child1Length;
+	private int child2Length;
 	
 	public GraceHashJoinOperator(Expression where, Operator child1, Operator child2) {
 		this.where =  where;
@@ -50,7 +51,7 @@ public class GraceHashJoinOperator implements Operator {
 		this.child2 = child2;
 		
 		tempList = new ArrayList<LeafValue[]>();
-		hash = new HashMap<String, ArrayList<LeafValue[]>>(100000, (float) 0.75);
+		hash = new HashMap<Long, ArrayList<LeafValue[]>>(100000, (float) 0.5);
 		
 		buildSchema();
 	}
@@ -101,14 +102,13 @@ public class GraceHashJoinOperator implements Operator {
 		child1.initialize();
 		child2.initialize();
 
+		child1Length = child1.getSchema().getColumns().size();
+		child2Length = child2.getSchema().getColumns().size();
 		
 		/* Initializations */
-		selectedCols1 = new boolean[child1.getSchema().getColumns().size()];
-		selectedCols2 = new boolean[child2.getSchema().getColumns().size()];
-		joinedLength = selectedCols1.length + selectedCols2.length;
-		
-		Arrays.fill(selectedCols1, false);
-		Arrays.fill(selectedCols2, false);
+		selectedCols1 = -1;
+		selectedCols2 = -1;
+		joinedLength = child1Length + child2Length;
 		
 		/* Get the columns on which to build the key */
 		getSelectedColumns();
@@ -144,15 +144,16 @@ public class GraceHashJoinOperator implements Operator {
 			
 			int pos = findInSchema(left, child1.getSchema());
 			if(pos < 0) {
-				selectedCols2[findInSchema(left, child2.getSchema())] = true;
-				selectedCols1[findInSchema(right, child1.getSchema())] = true;
+				selectedCols2 = findInSchema(left, child2.getSchema());
+				selectedCols1 = findInSchema(right, child1.getSchema());
 			}
 			else {
-				selectedCols1[pos] = true;
-				selectedCols2[findInSchema(right, child2.getSchema())] = true;
+				selectedCols1 = pos;
+				selectedCols2 = findInSchema(right, child2.getSchema());
 			}
 			
 		}
+		
 	}
 	
 	private int findInSchema(Column col, Schema schema) {
@@ -171,10 +172,11 @@ public class GraceHashJoinOperator implements Operator {
 		LeafValue[] next;
 
 		while((next = child1.readOneTuple()) != null) {
-			String key = "";
-			for(int i=0; i<selectedCols1.length; i++) {
-				if(selectedCols1[i])
-					key += next[i].toString();
+			Long key = null;
+			try {
+				key = next[selectedCols1].toLong();
+			} catch (InvalidLeaf e) {
+				e.printStackTrace();
 			}
 			
 			if(!hash.containsKey(key)) {
@@ -212,10 +214,11 @@ public class GraceHashJoinOperator implements Operator {
 		LeafValue[] next = null;
 		
 		while((next = child2.readOneTuple()) != null) {
-			String key = "";
-			for(int i=0; i<selectedCols2.length; i++) {
-				if(selectedCols2[i])
-					key += next[i].toString();
+			Long key = null;
+			try {
+				key = next[selectedCols2].toLong();
+			} catch (InvalidLeaf e) {
+				e.printStackTrace();
 			}
 			
 			
@@ -228,11 +231,11 @@ public class GraceHashJoinOperator implements Operator {
 			for(LeafValue[] left : matchedTuples) {
 				LeafValue[] joinedTuple = new LeafValue[joinedLength];
 				for(int i=0; i<joinedLength; i++) {
-					if(i < selectedCols1.length) {
+					if(i < child1Length) {
 						joinedTuple[i] = left[i];
 					}
 					else {
-						joinedTuple[i] = next[i - selectedCols1.length];
+						joinedTuple[i] = next[i - child1Length];
 					}
 				}
 				tempList.add(joinedTuple);
