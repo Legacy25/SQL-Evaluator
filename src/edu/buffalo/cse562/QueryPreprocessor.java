@@ -115,7 +115,7 @@ public class QueryPreprocessor {
 		}
 		else if(key instanceof DateValue) {
 			Date date = ((DateValue) key).getValue();
-			return String.valueOf(date.getYear());
+			return date.getYear()+"-"+date.getMonth();
 		}
 		else if(key instanceof StringValue) {
 			return key.toString().replace('\'', ' ').trim();

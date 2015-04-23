@@ -86,12 +86,26 @@ public class IndexOptimizer {
 				}
 				
 				if(chosenList.size() > 0) {
-					parseTree.setLeft(new IndexRangeScanOperator(
+					Operator newOp;
+					
+					newOp = new IndexRangeScanOperator(
 							((ProjectScanOperator) child).getOldSchema(),
 							child.getSchema(),
 							chosenList,
 							chosenColumn
-							));
+							);
+					
+					for(Expression clause : chosenList) {
+						clauseList.remove(clause);
+					}
+					
+					if(clauseList.size() == 0) {
+						parseTree = newOp;
+					}
+					else {
+						((SelectionOperator) parseTree).setWhere(ParseTreeOptimizer.mergeClauses(clauseList));
+						parseTree.setLeft(newOp);
+					}
 				}
 			}
 		}
