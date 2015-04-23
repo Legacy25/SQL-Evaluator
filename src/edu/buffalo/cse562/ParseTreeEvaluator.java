@@ -22,13 +22,11 @@ public class ParseTreeEvaluator {
 		parseTree.initialize();
 		
 		LeafValue res[] = null;
-		String output = "";
 		/* Keep getting a tuple and displaying it till we exhaust the root operator */
 		while((res = parseTree.readOneTuple()) != null) {
-			output += display(res);
+			System.out.println(display(res));
 		}
 		
-		System.out.println(output);
 	}
 	
 	public static String display(LeafValue res[]) {
@@ -61,7 +59,7 @@ public class ParseTreeEvaluator {
 			}
 		}
 		
-		return result + "\n";
+		return result;
 	}
 
 }
