@@ -60,7 +60,7 @@ public class QueryPreprocessor {
 				}
 				
 				try {
-					bw.write(tupleToFixedLengthString(scanner.getTuple(), scanner.getSchema())+"\n");
+					bw.write(scanner.getString()+"\n");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -82,43 +82,12 @@ public class QueryPreprocessor {
 						+" for column "+col.getColumnName());
 			}
 		}
-	}
-
-
-
-	private static String tupleToFixedLengthString(String[] tuple, Schema schema) {
-		ArrayList<ColumnWithType> columns = schema.getColumns();
-		String result = "";
 		
-		
-		for(int i=0; i<columns.size(); i++) {
-			int size = columns.get(i).getSize();
-			result += String.format("%" + size + "s", tuple[i]);
-		}
-		return result;
-	}
-
-
-
-	public static String[] parseLine(String line, Schema schema) {
-		ArrayList<ColumnWithType> columns = schema.getColumns();
-		ArrayList<String> result = new ArrayList<String>();
-		char arr[] = line.toCharArray();
-		int offset = 0;
-		
-		for(int i=0; i<columns.size(); i++) {
-			int size = columns.get(i).getSize();
-			result.add(new String(arr, offset, size));
 			
-			offset += size;
-		}
-		
-		String[] resarr = new String[result.size()];
-		for(int i=0; i<resarr.length; i++) {
-			resarr[i] = result.get(i).trim();
-		}
-		
-		return resarr;
+		/* DEBUG */
+//		if(Main.DEBUG) {
+//			System.err.println("Primary index buit for "+s.getTableName());
+//		}
 	}
 
 
