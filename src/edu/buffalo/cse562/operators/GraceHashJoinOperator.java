@@ -6,6 +6,7 @@ import java.util.HashMap;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LeafValue;
+import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.ParseTreeOptimizer;
@@ -36,7 +37,7 @@ public class GraceHashJoinOperator implements Operator {
 	private ArrayList<LeafValue[]> tempList;		/* Temporary list that holds the joined tuples */
 	
 	/* Hashes for the children's keys */
-	private HashMap<String, ArrayList<LeafValue []>> hash;
+	private HashMap<Long, ArrayList<LeafValue []>> hash;
 	
 	/* Boolean array that contains selected columns for both relations */
 	private int selectedCols1;
@@ -50,7 +51,7 @@ public class GraceHashJoinOperator implements Operator {
 		this.child2 = child2;
 		
 		tempList = new ArrayList<LeafValue[]>();
-		hash = new HashMap<String, ArrayList<LeafValue[]>>(100000, (float) 0.5);
+		hash = new HashMap<Long, ArrayList<LeafValue[]>>(100000, (float) 0.5);
 		
 		buildSchema();
 	}
@@ -171,7 +172,12 @@ public class GraceHashJoinOperator implements Operator {
 		LeafValue[] next;
 
 		while((next = child1.readOneTuple()) != null) {
-			String key = next[selectedCols1].toString();
+			Long key = null;
+			try {
+				key = next[selectedCols1].toLong();
+			} catch (InvalidLeaf e) {
+				e.printStackTrace();
+			}
 			
 			if(!hash.containsKey(key)) {
 				ArrayList<LeafValue[]> toBeAdded = new ArrayList<LeafValue[]>();
@@ -208,7 +214,12 @@ public class GraceHashJoinOperator implements Operator {
 		LeafValue[] next = null;
 		
 		while((next = child2.readOneTuple()) != null) {
-			String key = next[selectedCols2].toString();
+			Long key = null;
+			try {
+				key = next[selectedCols2].toLong();
+			} catch (InvalidLeaf e) {
+				e.printStackTrace();
+			}
 			
 			
 			ArrayList<LeafValue[]> matchedTuples = hash.get(key);
