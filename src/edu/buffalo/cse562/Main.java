@@ -166,7 +166,7 @@ public class Main {
 							);
 				}
 				
-				ParseTreeEvaluator.evaluate(parseTreeList.get(i));
+//				ParseTreeEvaluator.evaluate(parseTreeList.get(i));
 			}
 		}
 		

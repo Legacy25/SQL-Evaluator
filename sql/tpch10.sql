@@ -85,12 +85,25 @@ CREATE TABLE REGION (
     );
 
 SELECT  
-        orders.orderkey,
-        orders.orderdate
+        customer.custkey, 
+        customer.name, 
+        customer.acctbal,
+        nation.name,
+        customer.address,
+        customer.phone,
+        customer.comment,
+        SUM(lineitem.extendedprice * (1 - lineitem.discount)) AS revenue
 FROM    
-        orders
+        customer, 
+        orders,
+        lineitem,
+        nation
 WHERE   
-        orders.orderdate >= DATE('1993-10-01')
+        customer.custkey = orders.custkey
+        AND   lineitem.orderkey = orders.orderkey
+        AND   orders.orderdate >= DATE('1993-10-01')
         AND   orders.orderdate < DATE('1994-01-01')
-ORDER BY
-        orders.orderdate desc;
+        AND   lineitem.returnflag = 'R'
+        AND   customer.nationkey = nation.nationkey
+GROUP BY 
+        customer.custkey, customer.name, customer.acctbal, customer.phone, nation.name, customer.address, customer.comment;
