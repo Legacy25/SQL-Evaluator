@@ -11,7 +11,6 @@ import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
-import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.Schema;
 
 public class ScanOperator implements Operator {
@@ -104,7 +103,7 @@ public class ScanOperator implements Operator {
 		}
 		
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = ParseTreeOptimizer.split(line, '|');
+		String cols[] = line.split("\\|");
 		
 		/* LeafValue array that will hold the tuple to be returned */
 		LeafValue ret[] = new LeafValue[cols.length];

@@ -174,7 +174,7 @@ public class IndexEqualityProjectScanOperator implements Operator {
 	
 	private LeafValue[] constructTuple(String line) {
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = ParseTreeOptimizer.split(line, '|');
+		String cols[] = line.split("\\|");
 		
 		/* LeafValue array that will hold the tuple to be returned */
 		LeafValue ret[] = new LeafValue[size];

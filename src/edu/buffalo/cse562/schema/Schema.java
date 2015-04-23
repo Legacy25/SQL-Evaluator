@@ -1,17 +1,10 @@
 package edu.buffalo.cse562.schema;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import net.sf.jsqlparser.schema.Column;
-import edu.buffalo.cse562.Main;
 
 public class Schema {
 
@@ -200,34 +193,10 @@ public class Schema {
 	}
 	
 	public void storeSchemaStatistics(File folder) {
-//		try {
-//			BufferedWriter bw = new BufferedWriter(new FileWriter(folder+"/"+tableName+".stat", false));
-//			bw.write(rowCount+"\n");
-//			bw.flush();
-//			bw.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
+
 	}
 	
 	public void loadSchemaStatistics(File folder) {
-//		try {
-//			BufferedReader br = new BufferedReader(new FileReader(folder+"/"+tableName));
-//			rowCount = Long.parseLong(br.readLine());
-//			if(tableName.equalsIgnoreCase("SUPPLIER")) {
-//				rowCount = 10000000;
-//			}
-//			br.close();
-//		} catch (NumberFormatException e) {
-//			e.printStackTrace();
-//		} catch (FileNotFoundException e) {
-//			if(Main.DEBUG) {
-//				System.err.println("Statistics file not found");
-//			}
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-		
 		switch(tableName) {
 		case "LINEITEM":
 			rowCount = 1199969;

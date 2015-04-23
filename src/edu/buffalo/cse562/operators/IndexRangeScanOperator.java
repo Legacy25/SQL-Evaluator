@@ -23,7 +23,6 @@ import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.schema.Column;
 import edu.buffalo.cse562.Eval;
 import edu.buffalo.cse562.Main;
-import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
@@ -298,7 +297,7 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 
 	private LeafValue[] constructTuple(String line) {
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = ParseTreeOptimizer.split(line, '|');	
+		String cols[] = line.split("\\|");	
 		
 		/* LeafValue array that will hold the tuple to be returned */
 		LeafValue ret[] = new LeafValue[size];

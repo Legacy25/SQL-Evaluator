@@ -19,7 +19,6 @@ import java.util.Iterator;
 
 import edu.buffalo.cse562.LeafValueComparator;
 import edu.buffalo.cse562.Main;
-import edu.buffalo.cse562.ParseTreeOptimizer;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LongValue;
@@ -195,7 +194,7 @@ public class ExternalSortOperator implements Operator {
 
 	private LeafValue[] unSerializeTuple(String row) {
 		
-		String tokens[] = ParseTreeOptimizer.split(row, '|');
+		String tokens[] = row.split("\\|");
 		String type = "";
 
 		LeafValue[] tuple = new LeafValue[tokens.length];
