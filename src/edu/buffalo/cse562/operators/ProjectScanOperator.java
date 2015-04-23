@@ -13,6 +13,7 @@ import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
+import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
@@ -120,7 +121,7 @@ public class ProjectScanOperator implements Operator {
 
 	public LeafValue[] constructTuple(String line) {
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = line.split("\\|");
+		String cols[] = ParseTreeOptimizer.split(line, '|');
 		
 		/* LeafValue array that will hold the tuple to be returned */
 		LeafValue ret[] = new LeafValue[newSchema.getColumns().size()];

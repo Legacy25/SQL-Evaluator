@@ -865,4 +865,40 @@ public class ParseTreeOptimizer {
 		
 		return false;
 	}
+	
+	
+	
+	
+	
+	
+	public static String[] split(
+			String line, char delim) {
+		
+        ArrayList<String> result = new ArrayList<String>();
+        
+        if (line != null && line.length() > 0) {
+            int index1 = 0;
+            int index2 = line.indexOf(delim);
+            
+            while (index2 >= 0) {
+                String token = line.substring(index1, index2);
+                result.add(token);
+                index1 = index2 + 1;
+                index2 = line.indexOf(delim, index1);
+            }
+            
+            if (index1 < line.length() - 1) {
+                result.add(line.substring(index1));
+            }
+        }
+        
+        String[] ret = new String[result.size()];
+        int i = 0;
+        for(String s : result) {
+        	ret[i] = s;
+        	i++;
+        }
+        
+        return ret;
+    }
 }

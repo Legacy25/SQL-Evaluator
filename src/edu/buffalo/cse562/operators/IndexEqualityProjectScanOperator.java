@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.DateValue;
@@ -175,7 +174,7 @@ public class IndexEqualityProjectScanOperator implements Operator {
 	
 	private LeafValue[] constructTuple(String line) {
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = line.split("\\|");
+		String cols[] = ParseTreeOptimizer.split(line, '|');
 		
 		/* LeafValue array that will hold the tuple to be returned */
 		LeafValue ret[] = new LeafValue[size];
