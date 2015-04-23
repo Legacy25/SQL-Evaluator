@@ -35,7 +35,7 @@ public class ScanOperator implements Operator {
 	private FileReader fr;
 
 	
-	private String line;
+	private String[] cols;
 	
 	public ScanOperator(Schema schema) {		
 		/* 
@@ -52,8 +52,6 @@ public class ScanOperator implements Operator {
 		 * creation
 		 */
 		f = new File(schema.getTableFile());
-		
-		line = null;
 	}
 	
 	public void generateSchemaName() {
@@ -86,6 +84,7 @@ public class ScanOperator implements Operator {
 			return null;
 		}
 
+		String line = null;
 		try {
 			/* Read the next '|' delimited line which is the
 			 * next tuple
@@ -103,7 +102,7 @@ public class ScanOperator implements Operator {
 		}
 		
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = line.split("\\|");
+		cols = line.split("\\|");
 		
 		/* LeafValue array that will hold the tuple to be returned */
 		LeafValue ret[] = new LeafValue[cols.length];
@@ -183,8 +182,8 @@ public class ScanOperator implements Operator {
 
 	}
 
-	public String getString() {
-		return line;
+	public String[] getTuple() {
+		return cols;
 	}
 
 }
