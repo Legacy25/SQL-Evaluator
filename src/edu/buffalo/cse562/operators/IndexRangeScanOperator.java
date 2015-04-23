@@ -240,11 +240,6 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 			e.printStackTrace();
 		}
 		if(line == null) {
-			try {
-				br.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 			br = null;
 			return readOneTuple();
 		}
@@ -329,7 +324,7 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 
 			case "date":
 				/* Same deal as string */
-				ret[k] = new DateValue(" "+cols[i]+" ");
+				ret[k] = new StringValue(" "+cols[i]+" ");
 				break;
 			default:
 				System.err.println("Unknown column type");
@@ -430,7 +425,7 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 			lv = (StringValue) tuple[pos];
 			break;
 		case "date":
-			lv = (DateValue) tuple[pos];
+			lv = new DateValue(tuple[pos].toString());
 			break;
 		default:
 			throw new SQLException();

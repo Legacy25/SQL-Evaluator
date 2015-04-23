@@ -206,7 +206,7 @@ public class IndexEqualityProjectScanOperator implements Operator {
 
 			case "date":
 				/* Same deal as string */
-				ret[k] = new DateValue(" "+cols[i]+" ");
+				ret[k] = new StringValue(" "+cols[i]+" ");
 				break;
 			default:
 				System.err.println("Unknown column type");

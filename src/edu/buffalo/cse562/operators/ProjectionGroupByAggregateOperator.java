@@ -512,7 +512,7 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 			lv = (StringValue) next[pos];
 			break;
 		case "date":
-			lv = (DateValue) next[pos];
+			lv = (DateValue) new DateValue(next[pos].toString());
 			break;
 		default:
 			throw new SQLException();
