@@ -50,7 +50,7 @@ public class GraceHashJoinOperator implements Operator {
 		this.child2 = child2;
 		
 		tempList = new ArrayList<LeafValue[]>();
-		hash = new HashMap<String, ArrayList<LeafValue[]>>(10000, (float) 0.5);
+		hash = new HashMap<String, ArrayList<LeafValue[]>>(1000000, (float) 0.75);
 		
 		buildSchema();
 	}
