@@ -1,11 +1,6 @@
 package edu.buffalo.cse562.operators;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -13,25 +8,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.sleepycat.je.CursorConfig;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.EnvironmentConfig;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.SecondaryConfig;
-import com.sleepycat.je.SecondaryCursor;
-import com.sleepycat.je.SecondaryDatabase;
-
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LeafValue;
-import net.sf.jsqlparser.expression.LeafValue.InvalidLeaf;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
@@ -43,7 +25,7 @@ import edu.buffalo.cse562.QueryPreprocessor;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
 
-public class IndexProjectScanOperator implements Operator {
+public class IndexEqualityProjectScanOperator implements Operator {
 
 	private Schema oldSchema;
 	private Schema newSchema;
@@ -59,7 +41,7 @@ public class IndexProjectScanOperator implements Operator {
 	private boolean[] selectedCols;
 	
 	
-	public IndexProjectScanOperator(Schema oldSchema, Schema newSchema, Expression where) {
+	public IndexEqualityProjectScanOperator(Schema oldSchema, Schema newSchema, Expression where) {
 		this.oldSchema = oldSchema;
 		this.newSchema = newSchema;
 		this.where = where;
@@ -67,21 +49,7 @@ public class IndexProjectScanOperator implements Operator {
 		literalValues = new ArrayList<LeafValue>();
 		searchKeys = new ArrayList<String>();
 		
-		if(where instanceof Parenthesis) {
-			Expression e = ((Parenthesis) where).getExpression();
-			if(e instanceof OrExpression) {
-				for(Expression exp : ParseTreeOptimizer.splitOrClauses(e)) {
-					BinaryExpression be = (BinaryExpression) exp;
-					col = (Column) be.getLeftExpression();
-					literalValues.add((LeafValue) be.getRightExpression());
-				}
-			}
-		}
-		else {
-			BinaryExpression be = (BinaryExpression) where;
-			col = (Column) be.getLeftExpression();
-			literalValues.add((LeafValue) be.getRightExpression());
-		}
+		getLiterals();
 		
 		keyIndex = 0;
 		br = null;
@@ -95,6 +63,44 @@ public class IndexProjectScanOperator implements Operator {
 		buildSchema();
 	}
 	
+	private void getLiterals() {
+		
+		if(where instanceof Parenthesis) {
+			Expression e = ((Parenthesis) where).getExpression();
+			if(e instanceof OrExpression) {
+				for(Expression exp : ParseTreeOptimizer.splitOrClauses(e)) {
+					BinaryExpression be = (BinaryExpression) exp;
+					col = (Column) be.getLeftExpression();
+					Expression value = be.getRightExpression();
+					if(value instanceof LeafValue) {
+						literalValues.add((LeafValue) value);
+					}
+					else if (value instanceof Function) {
+						literalValues.add(new DateValue(
+								((Function) value).getParameters().getExpressions().get(0).toString()
+								)
+						);
+					}
+				}
+			}
+		}
+		
+		else {
+			BinaryExpression be = (BinaryExpression) where;
+			col = (Column) be.getLeftExpression();
+			Expression value = be.getRightExpression();
+			if(value instanceof LeafValue) {
+				literalValues.add((LeafValue) value);
+			}
+			else if (value instanceof Function) {
+				literalValues.add(new DateValue(
+						((Function) value).getParameters().getExpressions().get(0).toString()
+						)
+				);
+			}
+		}		
+	}
+
 	private void buildSchema() {
 		generateSchemaName();
 		
@@ -121,7 +127,6 @@ public class IndexProjectScanOperator implements Operator {
 		newSchema.setTableName("iScan {" + where + "} ("+oldSchema.getTableName()+")");
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public void initialize() {
 		
@@ -255,27 +260,4 @@ public class IndexProjectScanOperator implements Operator {
 		
 	}
 	
-	
-	private DatabaseEntry getSearchKey(LeafValue l) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(out);
-		
-		try {
-			if(l instanceof LongValue) {
-				dos.writeLong(l.toLong());
-			}
-			else if (l instanceof DoubleValue) {
-				dos.writeDouble(l.toDouble());
-			}
-			else if (l instanceof DateValue || l instanceof StringValue) {
-				dos.writeUTF(l.toString().substring(1, l.toString().length()-1));
-			}
-		} catch (NumberFormatException | IOException | InvalidLeaf e) {
-			e.printStackTrace();
-		}
-		
-		DatabaseEntry key = new DatabaseEntry();
-		key.setData(out.toByteArray());
-		return key;
-	}
 }

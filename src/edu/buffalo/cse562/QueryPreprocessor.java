@@ -79,7 +79,7 @@ public class QueryPreprocessor {
 			
 			if(Main.DEBUG) {
 				System.err.println("Secondary index buit for "+s.getTableName()
-						+" for solumn "+col.getColumnName());
+						+" for column "+col.getColumnName());
 			}
 		}
 		
@@ -115,7 +115,7 @@ public class QueryPreprocessor {
 		}
 		else if(key instanceof DateValue) {
 			Date date = ((DateValue) key).getValue();
-			return date.getYear()+"."+date.getMonth();
+			return String.valueOf(date.getYear());
 		}
 		else if(key instanceof StringValue) {
 			return key.toString().replace('\'', ' ').trim();
@@ -138,10 +138,11 @@ public class QueryPreprocessor {
 		switch(name) {
 		case "LINEITEM":
 			s.addToSecondaryIndexes(columns.get(8));
+			s.addToSecondaryIndexes(columns.get(10));
 			s.addToSecondaryIndexes(columns.get(14));
 			break;
 		case "ORDERS":
-	
+			s.addToSecondaryIndexes(columns.get(4));
 			break;
 		case "CUSTOMER":
 			s.addToSecondaryIndexes(columns.get(6));

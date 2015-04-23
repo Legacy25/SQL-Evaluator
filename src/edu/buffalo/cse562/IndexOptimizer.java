@@ -4,9 +4,17 @@ import java.util.ArrayList;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.Parenthesis;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
+import net.sf.jsqlparser.expression.operators.relational.MinorThan;
+import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.schema.Column;
-import edu.buffalo.cse562.operators.IndexProjectScanOperator;
+import edu.buffalo.cse562.operators.IndexEqualityProjectScanOperator;
+import edu.buffalo.cse562.operators.IndexRangeScanOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.ProjectScanOperator;
 import edu.buffalo.cse562.operators.SelectionOperator;
@@ -25,10 +33,94 @@ public class IndexOptimizer {
 		
 		parseTree = replaceSelectionScansWithIndexScans(parseTree);
 		
+		parseTree = replaceSelectionScansWithIndexRangeScans(parseTree);
+		
 		/* Generate appropriate table names after optimization */
 		parseTree.generateSchemaName();
 		
 		return parseTree;
+	}
+
+	private static Operator replaceSelectionScansWithIndexRangeScans(
+			Operator parseTree) {
+		
+		if(parseTree == null)
+			return null;
+		
+		if(parseTree instanceof SelectionOperator) {
+			Operator child = parseTree.getLeft();
+			if(child instanceof ProjectScanOperator) {
+				Expression where = ((SelectionOperator) parseTree).getWhere();
+				Column chosenColumn = null;
+				ArrayList<Expression> clauseList = ParseTreeOptimizer.splitAndClauses(where);
+				ArrayList<Expression> chosenList = new ArrayList<Expression>();
+				
+				for(Expression clause : clauseList) {
+					if(!(clause instanceof BinaryExpression)) {
+						continue;
+					}
+
+					BinaryExpression beClause = (BinaryExpression) clause;
+					Column col = getClauseColumn(beClause);
+					
+					if(!literalClause(beClause)) {
+						continue;
+					}
+					
+					if(!isASecondaryIndex(col, child.getSchema())) {
+						continue;
+					}
+					
+					if(!inequalityClause(beClause)) {
+						continue;
+					}
+					
+					if(chosenColumn != null 
+							&& !col.getColumnName().equalsIgnoreCase(chosenColumn.getColumnName())) {
+						
+						continue;
+					}
+					
+					chosenColumn = col;
+					chosenList.add(clause);
+				}
+				
+				if(chosenList.size() > 0) {
+					parseTree.setLeft(new IndexRangeScanOperator(
+							((ProjectScanOperator) child).getOldSchema(),
+							child.getSchema(),
+							chosenList,
+							chosenColumn
+							));
+				}
+			}
+		}
+		
+		parseTree.setLeft(replaceSelectionScansWithIndexRangeScans(parseTree.getLeft()));
+		parseTree.setRight(replaceSelectionScansWithIndexRangeScans(parseTree.getRight()));
+		
+		return parseTree;
+	}
+
+	private static Column getClauseColumn(BinaryExpression clause) {
+		return (Column) clause.getLeftExpression();
+	}
+
+	private static boolean inequalityClause(BinaryExpression clause) {
+		if(clause instanceof GreaterThan || clause instanceof GreaterThanEquals
+				|| clause instanceof MinorThan || clause instanceof MinorThanEquals) {
+			return true;
+		}
+		return false;
+	}
+
+	private static boolean literalClause(BinaryExpression clause) {
+		if(clause.getRightExpression() instanceof LeafValue 
+				|| clause.getRightExpression() instanceof Function) {
+			return true;
+		}
+		
+		return false;
 	}
 
 	private static Operator replaceSelectionScansWithIndexScans(
@@ -65,7 +157,7 @@ public class IndexOptimizer {
 					selOp.setWhere(where);
 					if(indexWhere != null) {
 						parseTree.setLeft(
-								new IndexProjectScanOperator(
+								new IndexEqualityProjectScanOperator(
 										psOp.getOldSchema(), 
 										psOp.getSchema(), 
 										indexWhere
@@ -77,7 +169,7 @@ public class IndexOptimizer {
 				else {
 					if(indexWhere != null) {
 						parseTree = 
-								new IndexProjectScanOperator(
+								new IndexEqualityProjectScanOperator(
 										psOp.getOldSchema(), 
 										psOp.getSchema(), 
 										indexWhere
@@ -154,6 +246,10 @@ public class IndexOptimizer {
 		}
 		for(Expression exp : orClauses) {
 			if(exp instanceof BinaryExpression) {
+				if(!(exp instanceof EqualsTo)) {
+					return false;
+				}
+				
 				Expression left = ((BinaryExpression) exp).getLeftExpression();
 				Expression right = ((BinaryExpression) exp).getRightExpression();
 				
