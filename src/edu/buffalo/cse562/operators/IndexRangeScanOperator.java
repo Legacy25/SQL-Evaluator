@@ -175,18 +175,18 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 					else if(val[0] > high[0] || val[0] < low[0]) {
 						continue;
 					}
-					else if(val[0].equals(high[0])
-							&& val[1].equals(high[1])) {
+					else if(val[0].longValue() == high[0].longValue()
+							&& val[1].longValue() == high[1].longValue()) {
 						selectionFileList.add(new File(Main.indexDirectory+"/"+name));
 					}
-					else if(val[0].equals(low[0]) 
-							&& val[1].equals(low[1])) {
+					else if(val[0].longValue() == low[0].longValue() 
+							&& val[1].longValue() == low[1].longValue()) {
 						selectionFileList.add(new File(Main.indexDirectory+"/"+name));
 					}
-					else if(val[0].equals(high[0]) && val[1] <= high[1]) {
+					else if(val[0].longValue() == high[0].longValue() && val[1] <= high[1]) {
 						fileList.add(new File(Main.indexDirectory+"/"+name));
 					}
-					else if(val[0].equals(low[0]) && val[1] >= low[1]) {
+					else if(val[0].longValue() == low[0].longValue() && val[1] >= low[1]) {
 						fileList.add(new File(Main.indexDirectory+"/"+name));
 					}
 				}
@@ -195,6 +195,7 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 		
 		if(selectionFileList.size() > 0) {
 			selectionMode = true;
+			
 		}
 	}
 
