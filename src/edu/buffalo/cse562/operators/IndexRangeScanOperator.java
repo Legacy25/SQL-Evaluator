@@ -36,9 +36,10 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 	private String filePrefix;
 	private Long[] low, high;
 	private int fileIndex;
+	private int size;
 	
 	private BufferedReader br;
-	private boolean[] selectedCols;
+	private ArrayList<Integer> selectedCols;
 	private boolean selectionMode;
 	
 	private LeafValue[] tuple;
@@ -60,9 +61,10 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 		
 		selectionMode = true;
 		
+		size = newSchema.getColumns().size();
 		getLimits();
 		
-		selectedCols = new boolean[oldSchema.getColumns().size()];
+		selectedCols = new ArrayList<Integer>();
 		
 		fileList = new ArrayList<File>();
 		selectionFileList = new ArrayList<File>();
@@ -79,7 +81,7 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 		for(ColumnWithType c : oldSchema.getColumns()) {
 			for(int j=0; j<newSchema.getColumns().size(); j++) {
 				if(c.getColumnName().equalsIgnoreCase(newSchema.getColumns().get(j).getColumnName())) {
-					selectedCols[i] = true;
+					selectedCols.add(i);
 				}
 			}
 			
@@ -293,12 +295,12 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 		return test.getValue();
 	}
 
-	public LeafValue[] constructTuple(String line) {
+	private LeafValue[] constructTuple(String line) {
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = line.split("\\|");
+		String cols[] = line.split("\\|");			// HIGH!
 		
 		/* LeafValue array that will hold the tuple to be returned */
-		LeafValue ret[] = new LeafValue[newSchema.getColumns().size()];
+		LeafValue ret[] = new LeafValue[size];
 		
 		/* 
 		 * Iterate over each column according to schema's type information
@@ -306,36 +308,34 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 		 * type
 		 */
 		int k = 0;
-		for(int i=0; i<cols.length; i++) {
-			if(selectedCols[i]) {
-				String type = oldSchema.getColumns().get(i).getColumnType();
-				
-				switch(type) {
-				case "int":
-					ret[k] = new LongValue(cols[i]);
-					break;
-				
-				case "decimal":
-					ret[k] = new DoubleValue(cols[i]);
-					break;
-				
-				case "char":
-				case "varchar":
-				case "string":
-					/* Blank spaces are appended to account for JSQLParser's weirdness */
-					ret[k] = new StringValue(" "+cols[i]+" ");
-					break;
+		for(int i:selectedCols) {
+			String type = oldSchema.getColumns().get(i).getColumnType();
+			
+			switch(type) {
+			case "int":
+				ret[k] = new LongValue(cols[i]);
+				break;
+			
+			case "decimal":
+				ret[k] = new DoubleValue(cols[i]);
+				break;
+			
+			case "char":
+			case "varchar":
+			case "string":
+				/* Blank spaces are appended to account for JSQLParser's weirdness */
+				ret[k] = new StringValue(" "+cols[i]+" ");
+				break;
 
-				case "date":
-					/* Same deal as string */
-					ret[k] = new DateValue(" "+cols[i]+" ");
-					break;
-				default:
-					System.err.println("Unknown column type");
-				}
-				
-				k++;
+			case "date":
+				/* Same deal as string */
+				ret[k] = new DateValue(" "+cols[i]+" ");
+				break;
+			default:
+				System.err.println("Unknown column type");
 			}
+			
+			k++;
 		}
 		
 		/* Return the generated tuple */
