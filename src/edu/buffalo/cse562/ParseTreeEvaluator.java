@@ -22,46 +22,46 @@ public class ParseTreeEvaluator {
 		parseTree.initialize();
 		
 		LeafValue res[] = null;
-		StringBuilder output = new StringBuilder(10000);
+		String output = "";
 		/* Keep getting a tuple and displaying it till we exhaust the root operator */
 		while((res = parseTree.readOneTuple()) != null) {
-			output.append(display(res));
+			output += display(res);
 		}
 		
 		System.out.println(output);
 	}
 	
-	public static StringBuilder display(LeafValue res[]) {
+	public static String display(LeafValue res[]) {
 		/* Formatting logic */
 		boolean flag = false;
-		StringBuilder result = new StringBuilder(50);
+		String result = "";
 		
 		for(int i=0; i<res.length; i++) {
 			if(flag)
-				result.append("|");
+				result += "|";
 			
 			if(!flag)
 				flag = true;
 			
 			if(res[i] instanceof StringValue) {
 				String str = res[i].toString();
-				result.append(str.substring(1, str.length() - 1));				
+				result += str.substring(1, str.length() - 1);				
 			}
 			else if(res[i] instanceof DoubleValue) {
 				DecimalFormat twoDForm = new DecimalFormat("#.####");
 			    try {
-			    	result.append(twoDForm.format(res[i].toDouble()));
+			    	result += twoDForm.format(res[i].toDouble());
 				} catch (NumberFormatException | InvalidLeaf e) {
 					e.printStackTrace();
 				}
 				
 			}
 			else {				
-				result.append(res[i].toString());
+				result += res[i].toString();
 			}
 		}
 		
-		return result.append('\n');
+		return result + "\n";
 	}
 
 }
