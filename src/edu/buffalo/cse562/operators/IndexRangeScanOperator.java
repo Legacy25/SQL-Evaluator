@@ -345,10 +345,12 @@ public class IndexRangeScanOperator extends Eval implements Operator {
 
 	@Override
 	public void reset() {
-		try {
-			br.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if(br != null) {
+			try {
+				br.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		initialize();
 	}
