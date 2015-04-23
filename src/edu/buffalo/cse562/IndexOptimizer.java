@@ -33,7 +33,10 @@ public class IndexOptimizer {
 		
 		parseTree = replaceSelectionScansWithIndexScans(parseTree);
 		
-//		parseTree = replaceSelectionScansWithIndexRangeScans(parseTree);
+		if(!Main.tpch10) {
+			parseTree = replaceSelectionScansWithIndexRangeScans(parseTree);
+			System.err.println("Range scans active");
+		}
 		
 		/* Generate appropriate table names after optimization */
 		parseTree.generateSchemaName();

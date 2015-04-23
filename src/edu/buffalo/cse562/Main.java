@@ -40,6 +40,7 @@ public class Main {
 	public static boolean memoryLimitsOn = false;
 	public static boolean preprocessingOn = false;
 	
+	public static boolean tpch10 = false;
 	
 	public static boolean DEBUG = true;
 	
@@ -80,6 +81,9 @@ public class Main {
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
+				if(args[i].contains("10")) {
+					tpch10 = true;
+				}
 			}
 		}
 		
