@@ -21,43 +21,47 @@ public class ParseTreeEvaluator {
 		
 		parseTree.initialize();
 		
-		LeafValue res[];
+		LeafValue res[] = null;
+		StringBuilder output = new StringBuilder(10000);
 		/* Keep getting a tuple and displaying it till we exhaust the root operator */
 		while((res = parseTree.readOneTuple()) != null) {
-			display(res);
+			output.append(display(res));
 		}
+		
+		System.out.println(output);
 	}
 	
-	public static void display(LeafValue res[]) {
+	public static StringBuilder display(LeafValue res[]) {
 		/* Formatting logic */
 		boolean flag = false;
+		StringBuilder result = new StringBuilder(50);
 		
 		for(int i=0; i<res.length; i++) {
 			if(flag)
-				System.out.print("|");
+				result.append("|");
 			
 			if(!flag)
 				flag = true;
 			
 			if(res[i] instanceof StringValue) {
 				String str = res[i].toString();
-				System.out.print(str.substring(1, str.length() - 1));				
+				result.append(str.substring(1, str.length() - 1));				
 			}
 			else if(res[i] instanceof DoubleValue) {
 				DecimalFormat twoDForm = new DecimalFormat("#.####");
 			    try {
-					System.out.print(Double.valueOf(twoDForm.format(res[i].toDouble())));
+			    	result.append(twoDForm.format(res[i].toDouble()));
 				} catch (NumberFormatException | InvalidLeaf e) {
 					e.printStackTrace();
 				}
 				
 			}
 			else {				
-				System.out.print(res[i]);
+				result.append(res[i].toString());
 			}
 		}
 		
-		System.out.println();
+		return result.append('\n');
 	}
 
 }
