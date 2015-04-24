@@ -199,7 +199,7 @@ public class SelectionOperator extends Eval implements Operator {
 			lv = (StringValue) next[pos];
 			break;
 		case "date":
-			lv = (DateValue) next[pos];
+			lv = new DateValue(next[pos].toString());
 			break;
 		default:
 			throw new SQLException();
