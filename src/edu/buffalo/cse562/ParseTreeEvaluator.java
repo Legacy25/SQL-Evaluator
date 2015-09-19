@@ -42,20 +42,15 @@ public class ParseTreeEvaluator {
 		}
 		
 		LeafValue res[] = null;
-		boolean newLineFlag = false;
 		/* Keep getting a tuple and displaying it till we exhaust the root operator */
 		while((res = operator.readOneTuple()) != null) {
 			String s = tupleToString(res);
 			if(bw == null) {
-				System.out.println(s);
+				if(!Main.QUIET) System.out.println(s);
 			}
 			else {
 				try {
-					if(newLineFlag) {
-						bw.write("\n");
-					}
-					bw.write(s);
-					newLineFlag = true;
+					bw.write(s+"\n");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -77,6 +72,7 @@ public class ParseTreeEvaluator {
 	public static String tupleToString(LeafValue res[]) {
 		boolean flag = false;
 		String result = "";
+		DecimalFormat twoDForm = new DecimalFormat("#.############");
 		
 		for(int i=0; i<res.length; i++) {
 			if(flag)
@@ -90,7 +86,6 @@ public class ParseTreeEvaluator {
 				result += str.substring(1, str.length() - 1);				
 			}
 			else if(res[i] instanceof DoubleValue) {
-				DecimalFormat twoDForm = new DecimalFormat("#.####");
 			    try {
 			    	result += twoDForm.format(res[i].toDouble());
 				} catch (NumberFormatException | InvalidLeaf e) {

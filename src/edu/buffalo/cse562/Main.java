@@ -59,6 +59,10 @@ public class Main {
 	public static boolean FILE_OUTPUT = false;
 	public static File FILE_OUTPUT_DIR = null;
 	
+	/*
+	 * -q Quiet mode
+	 */
+	public static boolean QUIET = false;
 	
 	public static void main(String[] args) {
 		
@@ -90,6 +94,9 @@ public class Main {
 				FILE_OUTPUT = true;
 				FILE_OUTPUT_DIR = new File(args[i+1]);
 				i++;
+			}
+			else if(args[i].equals("-q")) {
+				QUIET = true;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
