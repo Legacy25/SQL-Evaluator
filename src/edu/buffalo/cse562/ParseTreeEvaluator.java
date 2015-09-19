@@ -1,5 +1,9 @@
 package edu.buffalo.cse562;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -10,27 +14,67 @@ import edu.buffalo.cse562.operators.Operator;
 
 public class ParseTreeEvaluator {
 
-	/*
-	 * Evaluates a parse-tree
-	 */
-	public static void evaluate(Operator parseTree) {
+	public static void output(Operator operator) {
+		output(operator, null);
+	}
+	
+	public static void output(Operator operator, File f) {
 
-		if(parseTree == null) {
+		if(operator == null) {
 			return;
 		}
 		
-		parseTree.initialize();
+		operator.initialize();
 		
-		LeafValue res[] = null;
-		/* Keep getting a tuple and displaying it till we exhaust the root operator */
-		while((res = parseTree.readOneTuple()) != null) {
-			System.out.println(display(res));
+		BufferedWriter bw = null;
+		if(f != null) {
+			try {
+				if(!f.getParentFile().exists()) {
+					if(!f.getParentFile().mkdirs()) {
+						System.err.println("Couldn't create output directory! Exiting...");
+						System.exit(1);
+					}
+				}
+				bw = new BufferedWriter(new FileWriter(f));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		
+		LeafValue res[] = null;
+		boolean newLineFlag = false;
+		/* Keep getting a tuple and displaying it till we exhaust the root operator */
+		while((res = operator.readOneTuple()) != null) {
+			String s = tupleToString(res);
+			if(bw == null) {
+				System.out.println(s);
+			}
+			else {
+				try {
+					if(newLineFlag) {
+						bw.write("\n");
+					}
+					bw.write(s);
+					newLineFlag = true;
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		if(bw != null) {
+			try {
+				bw.flush();
+				bw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
-	public static String display(LeafValue res[]) {
-		/* Formatting logic */
+
+	/* Formatting logic for tuples to strings */
+	public static String tupleToString(LeafValue res[]) {
 		boolean flag = false;
 		String result = "";
 		

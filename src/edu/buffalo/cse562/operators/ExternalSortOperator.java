@@ -100,7 +100,7 @@ public class ExternalSortOperator implements Operator {
 		generateSchemaName();
 		
 		lvc = new LeafValueComparator(arguments, schema);
-		outputFileName = Integer.valueOf(Main.fileUUID++).toString()+"_output";
+		outputFileName = Integer.valueOf(Main.FILE_UUID++).toString()+"_output";
 		
 		partitionAndSortData();
 		
@@ -130,14 +130,14 @@ public class ExternalSortOperator implements Operator {
 				/* Sort tempList using the sorting routine */
 				Collections.sort(tempList, new LeafValueComparator(arguments, schema));
 				
-				fileName = Integer.valueOf(Main.fileUUID++).toString()
+				fileName = Integer.valueOf(Main.FILE_UUID++).toString()
 						+ "_block_"
 						+ counter;
 				
 				BufferedWriter bw = null;
 				
 				try {
-					File f = new File(Main.swapDirectory, fileName);
+					File f = new File(Main.SWAP, fileName);
 					bw = new BufferedWriter(new FileWriter(f));
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -279,7 +279,7 @@ public class ExternalSortOperator implements Operator {
 		try {
 			bw = new BufferedWriter(
 					new FileWriter(
-							new File(Main.swapDirectory, outputFileName), true
+							new File(Main.SWAP, outputFileName), true
 							)
 					);
 		} catch (IOException e) {
@@ -342,7 +342,7 @@ public class ExternalSortOperator implements Operator {
 
 		for (int i=0; i<tempFileMap.size(); i++) {
 			try {
-				br = new BufferedReader(new FileReader(new File(Main.swapDirectory, tempFileMap.get(i))));
+				br = new BufferedReader(new FileReader(new File(Main.SWAP, tempFileMap.get(i))));
 				filePointers.add(br);
 				br = null;
 			} catch (FileNotFoundException e) {
@@ -373,7 +373,7 @@ public class ExternalSortOperator implements Operator {
 		
 		if (br == null) {
 			try {
-				br = new BufferedReader(new FileReader(new File(Main.swapDirectory, outputFileName)));
+				br = new BufferedReader(new FileReader(new File(Main.SWAP, outputFileName)));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}

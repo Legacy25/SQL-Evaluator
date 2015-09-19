@@ -90,7 +90,7 @@ public class ParseTreeOptimizer {
 		parseTree = initialSelectionDecomposition(parseTree);
 
 		/* Replace Selection over Cross Product with appropriate Join */
-		if(Main.memoryLimitsOn) {
+		if(Main.MEMORY_LIMITED) {
 			parseTree = optimizeMemory(parseTree);
 		}
 		
