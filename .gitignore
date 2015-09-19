@@ -76,11 +76,4 @@ Thumbs.db
 ehthumbs.db
 Thumbs.db
 
-bigdata/
-middata/
-testdata/
-
-bin/
 swap/
-bdb/
-sql/
