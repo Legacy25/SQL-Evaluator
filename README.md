@@ -39,3 +39,13 @@ https://github.com/electrum/tpch-dbgen
 ```
 
 The data flag points to the data directory. The swap flag points to a directory used for out of memory operations like external sorts.
+
+# Example
+
+```
+> ./run.sh --data data sql/tpch1.sql 
+A|F|3608|3617399.8|3415815.6154|3550622.3881|25.5887|25655.3177|0.0535|141
+N|F|98|96050.28|93793.9484|94868.9501|32.6667|32016.76|0.0233|3
+N|O|7917|7922719.62|7540013.3753|7850451.2831|25.9574|25976.1299|0.0487|305
+R|F|3269|3260914.61|3079298.8793|3200628.9333|24.3955|24335.1837|0.0516|134
+```
