@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 
 import edu.buffalo.cse562.operators.Operator;
-import edu.buffalo.cse562.schema.Schema;
 
 public class Main {	
 	
@@ -24,8 +23,6 @@ public class Main {
 	 * Need application-wide access to this, so a static global
 	 */
 	public static File swapDirectory = null;
-	
-	public static File indexDirectory = null;
 	
 	public static int fileUUID = 0;
 	
@@ -38,13 +35,8 @@ public class Main {
 	 * in choosing non-blocking operators
 	 */
 	public static boolean memoryLimitsOn = false;
-	public static boolean preprocessingOn = false;
-	
-	public static boolean tpch10 = false;
 	
 	public static boolean DEBUG = true;
-	
-	
 	
 	public static void main(String[] args) {
 		
@@ -69,21 +61,11 @@ public class Main {
 				memoryLimitsOn = true;
 				i++;
 			}
-			else if(args[i].equalsIgnoreCase("--db")) {
-				indexDirectory = new File(args[i+1]);
-				i++;
-			}
-			else if(args[i].equalsIgnoreCase("--load")) {
-				preprocessingOn = true;
-			}
 			else if(args[i].equalsIgnoreCase("--debug")) {
 				DEBUG = true;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
-				if(args[i].contains("10")) {
-					tpch10 = true;
-				}
 			}
 		}
 		
@@ -96,45 +78,6 @@ public class Main {
 				}
 			}
 		}
-		
-		if(preprocessingOn) {
-			
-			/*
-			 * Clear the index directory
-			 */
-			if(indexDirectory != null) {
-				for(File f:indexDirectory.listFiles()) {
-					try {
-						Files.deleteIfExists(f.toPath());
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			else {
-				System.err.println("No Index directory defined! Exiting...");
-				System.exit(1);
-			}
-			
-			/*
-			 * Generate schemas
-			 */
-			for(File f : sqlFiles) {
-				ParseTreeGenerator.generate(dataDirs, f);
-			}
-			
-			/*
-			 * Get the schemas and build indexes
-			 */
-			ArrayList<Schema> tables = ParseTreeGenerator.getTableSchemas();
-			for(Schema s:tables) {
-				QueryPreprocessor.buildIndex(s);
-//				s.storeSchemaStatistics(indexDirectory);
-			}
-			
-			return;
-		}
-		
 		
 		/* 
 		 * Keep track of query time locally.
@@ -153,7 +96,6 @@ public class Main {
 		for(int i=0; i< parseTreeList.size(); i++) {
 			Operator parseTree = parseTreeList.get(i);
 			parseTreeList.set(i, ParseTreeOptimizer.optimize(parseTree));
-			parseTreeList.set(i, IndexOptimizer.optimize(parseTree));
 		}
 		
 		long generateTime = System.nanoTime();
@@ -164,12 +106,6 @@ public class Main {
 			/* DEBUG */
 			/* Show the optimized Query Plan */
 			if(parseTreeList.get(i) != null) {
-				if(Main.DEBUG) {
-					System.err.println(
-							parseTreeList.get(i).getSchema()
-							);
-				}
-				
 				ParseTreeEvaluator.evaluate(parseTreeList.get(i));
 			}
 		}

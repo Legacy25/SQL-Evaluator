@@ -46,7 +46,6 @@ public class ParseTreeGenerator {
 
 	/* The tables HashMap keeps a mapping of tables to their corresponding schemas */
 	private static ArrayList<Schema> tables = new ArrayList<Schema>();
-//	private static ArrayList<String> createTableStatements = new ArrayList<String>();
 	
 	/* Function to find a table within the provided Data Directories */
 	private static String findFile(ArrayList<String> dataDirs, String tableName) {
@@ -54,7 +53,7 @@ public class ParseTreeGenerator {
 			File dir = new File(dDirs);
 			File files[] = dir.listFiles();
 			for(File f : files) {
-				if(f.getName().equalsIgnoreCase(tableName+".dat"))
+				if(f.getName().equalsIgnoreCase(tableName+".tbl"))
 					return f.getAbsolutePath();
 			}
 		}
@@ -151,16 +150,8 @@ public class ParseTreeGenerator {
 						}
 					}
 
-					schema = QueryPreprocessor.generateSecondaryIndexes(schema);
-					schema.loadSchemaStatistics(Main.indexDirectory);
-					
 					/* Store schema for later use */
 					tables.add(schema);
-					
-					if(Main.DEBUG) {
-						System.err.println(cTable);
-						System.err.println("ParseTreeGenerator generated schema: "+schema);
-					}
 				}
 				
 				/*
