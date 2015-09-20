@@ -16,7 +16,6 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.OrderByElement;
@@ -103,16 +102,10 @@ public class ParseTreeGenerator {
 				 */				
 
 				if(statement instanceof CreateTable) {
-//					createTableStatements.add(statement.toString());
-					
 					CreateTable cTable = (CreateTable) statement;
 					
 					String tableName = cTable.getTable().toString();
 					String tableFile = findFile(dataDirs, tableName);
-					Index primaryKey = (Index) cTable.getIndexes().get(0);
-					
-					@SuppressWarnings("unchecked")
-					ArrayList<String> pKCols = (ArrayList<String>) primaryKey.getColumnsNames();
 					
 					if(tableFile == null) {
 						System.err.println("Table "+ tableName + " not found in any "
@@ -141,13 +134,6 @@ public class ParseTreeGenerator {
 								);
 						k++;
 						schema.addColumn(c);
-						
-						if(pKCols.contains(name)) {
-							schema.addToPrimaryKey(c);
-						}
-						if(colDef.getColumnSpecStrings() != null) {
-							schema.addToForeignKeys(c);
-						}
 					}
 
 					/* Store schema for later use */

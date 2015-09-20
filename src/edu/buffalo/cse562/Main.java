@@ -15,6 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 import edu.buffalo.cse562.operators.Operator;
 
@@ -165,6 +166,18 @@ public class Main {
 			 * and add it to the generation time 
 			 */
 			qgenTime.set(i, qgenTime.get(i) + (double) (System.nanoTime() - localStart)/BILLION);
+			
+			/*
+			 * Display the query plan
+			 */
+			if(Main.DEBUG) {
+				parseTreeList.forEach(new Consumer<Operator>() {
+					@Override
+					public void accept(Operator t) {
+						System.out.println(t.getSchema());
+					}
+				});
+			}
 		}
 		
 		/*

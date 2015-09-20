@@ -24,9 +24,6 @@ public class Schema {
 	private String tableFile;
 	
 	private ArrayList<ColumnWithType> columns;
-	private ArrayList<ColumnWithType> primaryKey;
-	private ArrayList<ColumnWithType> foreignKeys;
-	private ArrayList<ColumnWithType> secondaryIndexes;
 	
 	private long rowCount;
 	
@@ -39,18 +36,12 @@ public class Schema {
 		
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
-		primaryKey = new ArrayList<ColumnWithType>();
-		foreignKeys = new ArrayList<ColumnWithType>();
-		secondaryIndexes = new ArrayList<ColumnWithType>();
 	}
 	
 	public Schema(Schema schema) {
 		this.tableName = schema.tableName;
 		this.tableFile = schema.tableFile;
 		this.columns = new ArrayList<ColumnWithType>();
-		this.primaryKey = new ArrayList<ColumnWithType>();
-		this.foreignKeys = new ArrayList<ColumnWithType>();
-		this.secondaryIndexes = new ArrayList<ColumnWithType>();
 		
 		rowCount = schema.getRowCount();
 		
@@ -58,17 +49,6 @@ public class Schema {
 			columns.add(new ColumnWithType(schema.columns.get(i)));
 		}
 		
-		for(int i=0; i<schema.primaryKey.size(); i++) {
-			primaryKey.add(new ColumnWithType(schema.primaryKey.get(i)));
-		}
-		
-		for(ColumnWithType col : schema.getForeignKeys()) {
-			foreignKeys.add(col);
-		}
-		
-		for(ColumnWithType col : schema.getSecondaryIndexes()) {
-			secondaryIndexes.add(col);
-		}
 	}
 
 	public Schema() {
@@ -79,9 +59,6 @@ public class Schema {
 		
 		/* Initializations */
 		columns = new ArrayList<ColumnWithType>();
-		primaryKey = new ArrayList<ColumnWithType>();
-		foreignKeys = new ArrayList<ColumnWithType>();
-		secondaryIndexes = new ArrayList<ColumnWithType>();
 	}
 
 	
@@ -115,38 +92,6 @@ public class Schema {
 		this.columns.addAll(Arrays.asList(columns));
 	}
 	
-	public ColumnWithType getPrimaryKey(int i) {
-		return primaryKey.get(i);
-	}
-	
-	public ArrayList<ColumnWithType> getPrimaryKey() {
-		return primaryKey;
-	}
-	
-	public int getPrimaryKeySize() {
-		return primaryKey.size();
-	}
-	
-	public void addToPrimaryKey(ColumnWithType column) {
-		this.primaryKey.add(column);
-	}
-	
-	public ArrayList<ColumnWithType> getForeignKeys() {
-		return foreignKeys;
-	}
-	
-	public void addToForeignKeys(ColumnWithType column) {
-		this.foreignKeys.add(column);
-	}
-	
-	public ArrayList<ColumnWithType> getSecondaryIndexes() {
-		return secondaryIndexes;
-	}
-	
-	public void addToSecondaryIndexes(ColumnWithType col) {
-		secondaryIndexes.add(col);
-	}
-	
 	public int columnToIndex(ColumnWithType col) {
 		for(int i=0; i<columns.size(); i++) {
 			if(columns.get(i) == col) {
@@ -169,23 +114,7 @@ public class Schema {
 	
 	@Override
 	public String toString() {
-		/* Return a formatted string containing the schema information */
-		String result = tableName+"\n";
-		
-		for(ColumnWithType col:columns) {
-			if(foreignKeys.contains(col)) {
-				result = result + col.toString() + "(sInd) | ";
-			}
-			else if (primaryKey.contains(col)) {
-				result = result + col.toString() + "(pK) | ";
-			}
-			else {
-				result = result + col.toString() + " | ";
-			}
-		}
-		
-		result = result.substring(0, result.length() - 2) + "\n";
-		return result;
+		return tableName;
 	}
 
 	public void incrementRowCount() {
