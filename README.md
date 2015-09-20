@@ -3,8 +3,6 @@ A SQL evaluator done as part of a graduate database class
 
 This project translates SQL to an abstract syntax tree (AST) representation and then applies relational algebra rewrites to find an optimum query evaluation strategy. Efficient joins and external sort algorithms enable it to work with huge datasets even on limited memory.
 
-Basic indexing has been used to optmize runtime.
-
 # Build and run
 
 To build, just run the build script -
@@ -49,3 +47,15 @@ N|F|98|96050.28|93793.9484|94868.9501|32.6667|32016.76|0.0233|3
 N|O|7917|7922719.62|7540013.3753|7850451.2831|25.9574|25976.1299|0.0487|305
 R|F|3269|3260914.61|3079298.8793|3200628.9333|24.3955|24335.1837|0.0516|134
 ```
+
+# Additional Flags
+
+SQL-Parser supports a few additional flags to generate output and show debugging information. 
+
+```--degug``` flag enables debugging information like generated query plans, optimized query plans and execution times.
+
+```-q``` quiet mode, results are not output to the console.
+
+```--fileout <dir>``` results are written to a file named <sqlfile-modulo-.sql>.out in the specified directory, which will be created if it doesn't exist.
+
+```--time <dir>``` Query plan generation time and query execution times are written as a ```|``` separated tuple to a file named <sqlfile-modulo-.sql>.stat in the specified directory, which will be created if it doesn't exist.
