@@ -56,6 +56,6 @@ SQL-Parser supports a few additional flags to generate output and show debugging
 
 ```-q``` quiet mode, results are not output to the console.
 
-```--fileout <dir>``` results are written to a file named <sqlfile-modulo-.sql>.out in the specified directory, which will be created if it doesn't exist.
+```--fileout <dir>``` results are written to a file named ```<sqlfile-modulo-.sql>.out``` in the specified directory, which will be created if it doesn't exist.
 
-```--time <dir>``` Query plan generation time and query execution times are written as a ```|``` separated tuple to a file named <sqlfile-modulo-.sql>.stat in the specified directory, which will be created if it doesn't exist.
+```--time <dir>``` Query plan generation time and query execution times are written as a ```|``` separated tuple to a file named ```<sqlfile-modulo-.sql>.stat``` in the specified directory, which will be created if it doesn't exist.
