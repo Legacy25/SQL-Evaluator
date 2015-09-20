@@ -214,13 +214,13 @@ public class Main {
 		if(Main.TIME_OUTPUT) {
 			for(int i = 0; i < sqlFiles.size(); i++) {
 				try {
-					if(!FILE_OUTPUT_DIR.exists()) {
-						FILE_OUTPUT_DIR.mkdirs();
+					if(!TIME_OUTPUT_DIR.exists()) {
+						TIME_OUTPUT_DIR.mkdirs();
 					}
 					BufferedWriter bw = new BufferedWriter(
 							new FileWriter(
 									new File(
-											FILE_OUTPUT_DIR,
+											TIME_OUTPUT_DIR,
 											sqlFiles.get(i).getName().split(".sql")[0]+".stat")
 									)
 							);
