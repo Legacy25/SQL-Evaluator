@@ -9,10 +9,12 @@
 
 package edu.buffalo.cse562;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -28,6 +30,8 @@ public class Main {
 	 * Need application-wide access to this, so a static global
 	 */
 	public static File SWAP = null;
+	
+	public static ArrayList<String> DATADIRS;
 	
 	/*
 	 * Initialize a file name counter required for bookkeeping
@@ -86,23 +90,17 @@ public class Main {
 		DEBUG = false;
 		
 		/* Stores the data directories */
-		ArrayList<String> dataDirs = new ArrayList<String>();
+		DATADIRS = new ArrayList<String>();
 		
 		/* Stores the SQL files */
 		ArrayList<File> sqlFiles = new ArrayList<File>();
-		
-		/* Stores query generation times for each query */
-		ArrayList<Double> qgenTime = new ArrayList<Double>();
-		
-		/* Stores query execution times for each query */
-		ArrayList<Double> qexecTime = new ArrayList<Double>();
 		
 		/*
 		 * CLI argument parsing
 		 */		
 		for(int i=0; i<args.length; i++) {
 			if(args[i].equalsIgnoreCase("--data")) {
-				dataDirs.add(args[i+1]);
+				DATADIRS.add(args[i+1]);
 				i++;
 			}
 			else if(args[i].equalsIgnoreCase("--swap")) {
@@ -129,9 +127,6 @@ public class Main {
 			else if(args[i].equals("-mem")) {
 				IN_MEMORY = true;
 			}
-			else {
-				sqlFiles.add(new File(args[i]));
-			}
 		}
 		
 		/*
@@ -148,6 +143,39 @@ public class Main {
 			}
 		}
 		
+		String promptInput = "";
+		
+		System.out.println("Enter the sql files separated by a comma, enter exit to quit"
+				+ "\n");
+		
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		while (true) {
+			System.out.println("> ");
+			try {
+				promptInput = br.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			String[] files = promptInput.split(",");
+			for(String f : files) {
+				f.trim();
+				File file = new File(f);
+				sqlFiles.add(file);
+			}
+			
+			processSqlFileList(sqlFiles);
+			sqlFiles.clear();
+		}
+	}
+	
+	private static void processSqlFileList(ArrayList<File> sqlFiles) {
+
+		/* Stores query generation times for each query */
+		ArrayList<Double> qgenTime = new ArrayList<Double>();
+		
+		/* Stores query execution times for each query */
+		ArrayList<Double> qexecTime = new ArrayList<Double>();
+		
 		/* 
 		 * Keep track of query time locally.
 		 */
@@ -158,7 +186,7 @@ public class Main {
 		for(int i = 0; i < sqlFiles.size(); i++) {
 			File f = sqlFiles.get(i);
 			long localStart = System.nanoTime();
-			parseTreeList.add(ParseTreeGenerator.generate(dataDirs, f));
+			parseTreeList.add(ParseTreeGenerator.generate(DATADIRS, f));
 			
 			/* Compute the generation time for this query */
 			qgenTime.add((double) (System.nanoTime() - localStart)/BILLION);
