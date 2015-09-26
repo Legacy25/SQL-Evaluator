@@ -44,7 +44,7 @@ public class ScanOperator implements Operator {
 		 * are ultimately generated
 		 * using this information
 		 */
-		this.schema = new Schema(schema);
+		this.schema = schema;
 		/*
 		 * Make a new File object using the file location
 		 * information in the relation's schema. The

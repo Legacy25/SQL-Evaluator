@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import edu.buffalo.cse562.Eval;
+import edu.buffalo.cse562.Main;
 import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.ColumnWithType;
 import edu.buffalo.cse562.schema.Schema;
@@ -497,6 +498,10 @@ public class ProjectionGroupByAggregateOperator extends Eval implements Operator
 					break;
 				}
 			}
+		}
+
+		if(Main.IN_MEMORY) {
+			return next[pos];
 		}
 		
 		switch(type) {

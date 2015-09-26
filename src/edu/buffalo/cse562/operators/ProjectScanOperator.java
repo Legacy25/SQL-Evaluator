@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import org.apache.commons.lang3.StringUtils;
+
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.expression.LongValue;
@@ -119,7 +121,7 @@ public class ProjectScanOperator implements Operator {
 
 	public LeafValue[] constructTuple(String line) {
 		/* Split the tuple into attributes using the '|' delimiter */
-		String cols[] = line.split("\\|");
+		String cols[] = StringUtils.split(line, '|');
 		
 		/* LeafValue array that will hold the tuple to be returned */
 		LeafValue ret[] = new LeafValue[newSchema.getColumns().size()];
@@ -203,6 +205,10 @@ public class ProjectScanOperator implements Operator {
 	}
 
 	public HashSet<String> getSelectedColumns() {
+		return selectedColumnNames;
+	}
+
+	public HashSet<String> getProjections() {
 		return selectedColumnNames;
 	}
 

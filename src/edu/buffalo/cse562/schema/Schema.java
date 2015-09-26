@@ -1,9 +1,12 @@
 package edu.buffalo.cse562.schema;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import edu.buffalo.cse562.operators.ScanOperator;
+import net.sf.jsqlparser.expression.LeafValue;
 import net.sf.jsqlparser.schema.Column;
 
 public class Schema {
@@ -26,6 +29,8 @@ public class Schema {
 	private ArrayList<ColumnWithType> columns;
 	
 	private long rowCount;
+	private boolean materialized = false;
+	private ArrayList<LeafValue[]> tuples;
 	
 	
 	public Schema(String tableName, String tableFile) {
@@ -156,5 +161,31 @@ public class Schema {
 	
 	public void clearColumns() {
 		columns.clear();
+	}
+
+	public void materialize() {
+		tuples = new ArrayList<LeafValue[]>();
+		ScanOperator s = new ScanOperator(this);
+		s.initialize();
+		LeafValue[] tuple = null;
+		while((tuple = s.readOneTuple()) != null) {
+			tuples.add(tuple);
+		}
+		materialized = true;
+	}
+	
+	public boolean isMaterialized() {
+		return materialized;
+	}
+	
+	public LeafValue[] getTuple(int index) throws SQLException {
+		if(!materialized) {
+			throw new SQLException("Trying to read from unmaterialized schema!");
+		}
+		
+		if(index >= tuples.size())
+			return null;
+		
+		return tuples.get(index);
 	}
 }

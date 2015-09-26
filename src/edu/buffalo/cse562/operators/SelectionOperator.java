@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import edu.buffalo.cse562.Eval;
+import edu.buffalo.cse562.Main;
 import edu.buffalo.cse562.ParseTreeOptimizer;
 import edu.buffalo.cse562.schema.ColumnInfo;
 import edu.buffalo.cse562.schema.Schema;
@@ -184,6 +185,10 @@ public class SelectionOperator extends Eval implements Operator {
 					break;
 				}
 			}
+		}
+
+		if(Main.IN_MEMORY) {
+			return next[pos];
 		}
 		
 		switch(type) {

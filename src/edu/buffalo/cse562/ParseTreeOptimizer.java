@@ -24,6 +24,8 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import edu.buffalo.cse562.operators.CrossProductOperator;
 import edu.buffalo.cse562.operators.ExternalSortOperator;
 import edu.buffalo.cse562.operators.GraceHashJoinOperator;
+import edu.buffalo.cse562.operators.MemProjectScanOperator;
+import edu.buffalo.cse562.operators.MemScanOperator;
 import edu.buffalo.cse562.operators.Operator;
 import edu.buffalo.cse562.operators.OrderByOperator;
 import edu.buffalo.cse562.operators.ProjectScanOperator;
@@ -94,6 +96,10 @@ public class ParseTreeOptimizer {
 			parseTree = optimizeMemory(parseTree);
 		}
 		
+		if(Main.IN_MEMORY) {
+			parseTree = replaceScansWithMemScans(parseTree);
+		}
+		
 		/* Other Patterns go here */
 		
 		/* Generate appropriate table names after optimization */
@@ -103,6 +109,27 @@ public class ParseTreeOptimizer {
 		
 	}
 	
+	private static Operator replaceScansWithMemScans(Operator parseTree) {
+		if(parseTree == null)
+			return null;
+		
+		if(parseTree instanceof ScanOperator) {
+			if(parseTree.getSchema().isMaterialized())
+				parseTree = new MemScanOperator(parseTree.getSchema());
+		}
+		else if(parseTree instanceof ProjectScanOperator) {
+			parseTree = new MemProjectScanOperator(
+					((ProjectScanOperator) parseTree).getOldSchema(), 
+					((ProjectScanOperator) parseTree).getProjections()
+					);
+		}
+		
+		parseTree.setLeft(replaceScansWithMemScans(parseTree.getLeft()));
+		parseTree.setRight(replaceScansWithMemScans(parseTree.getRight()));
+		
+		return parseTree;
+	}
+
 	private static Operator findJoinPatternAndReplace1(Operator parseTree) {
 		if(parseTree == null) {
 			/* Leaf Node */

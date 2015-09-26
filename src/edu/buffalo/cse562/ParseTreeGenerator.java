@@ -138,6 +138,11 @@ public class ParseTreeGenerator {
 
 					/* Store schema for later use */
 					tables.add(schema);
+					
+					/* Materialize if in-memory mode on */
+					if(Main.IN_MEMORY) {
+						schema.materialize();
+					}
 				}
 				
 				/*

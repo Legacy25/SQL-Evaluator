@@ -76,6 +76,11 @@ public class Main {
 	 */
 	public static boolean QUIET = false;
 	
+	/*
+	 * Console mode
+	 */
+	public static boolean IN_MEMORY = false;
+	
 	public static void main(String[] args) {
 		
 		DEBUG = false;
@@ -120,6 +125,9 @@ public class Main {
 			}
 			else if(args[i].equals("-q")) {
 				QUIET = true;
+			}
+			else if(args[i].equals("-mem")) {
+				IN_MEMORY = true;
 			}
 			else {
 				sqlFiles.add(new File(args[i]));
