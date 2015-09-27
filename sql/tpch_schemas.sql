@@ -83,4 +83,3 @@ CREATE TABLE REGION (
         comment      VARCHAR(152),
         PRIMARY KEY (regionkey)
     );
-

@@ -1,5 +1,3 @@
-
-
 SELECT  
         customer.custkey, 
         customer.name, 

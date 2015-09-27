@@ -1,5 +1,3 @@
-
-
 SELECT
   lineitem.orderkey,
   sum(lineitem.extendedprice*(1-lineitem.discount)) as revenue, 

@@ -1,4 +1,3 @@
-
 select  lineitem.shipmode, 
         sum(case when orders.orderpriority = '1-URGENT'
                      or orders.orderpriority = '2-HIGH'

@@ -84,6 +84,11 @@ public class Main {
 	/*
 	 * Console mode
 	 */
+	public static boolean INTERACTIVE = false;
+	
+	/*
+	 * In memmory mode
+	 */
 	public static boolean IN_MEMORY = false;
 	
 	public static void main(String[] args) {
@@ -125,8 +130,14 @@ public class Main {
 			else if(args[i].equals("-q")) {
 				QUIET = true;
 			}
-			else if(args[i].equals("-mem")) {
+			else if(args[i].equals("-m")) {
 				IN_MEMORY = true;
+			}
+			else if(args[i].equals("-i")) {
+				INTERACTIVE = true;
+			}
+			else {
+				sqlFiles.add(new File(args[i].trim()));
 			}
 		}
 		
@@ -144,28 +155,34 @@ public class Main {
 			}
 		}
 		
-		String promptInput = "";
+		processSqlFileList(sqlFiles);
+		sqlFiles.clear();
 		
-		System.out.println("Enter the sql files separated by a comma, enter exit to quit"
-				+ "\n");
 		
-		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		while (true) {
-			System.out.println("> ");
-			try {
-				promptInput = br.readLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			String[] files = promptInput.split(",");
-			for(String f : files) {
-				f.trim();
-				File file = new File(f);
-				sqlFiles.add(file);
-			}
+		if(INTERACTIVE) {
+			String promptInput = "";
 			
-			processSqlFileList(sqlFiles);
-			sqlFiles.clear();
+			System.out.println("Enter the sql files separated by a comma, enter exit to quit"
+					+ "\n");
+			
+			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+			while (true) {
+				System.out.println("> ");
+				try {
+					promptInput = br.readLine();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				String[] files = promptInput.split(",");
+				for(String f : files) {
+					f.trim();
+					File file = new File(f);
+					sqlFiles.add(file);
+				}
+				
+				processSqlFileList(sqlFiles);
+				sqlFiles.clear();
+			}
 		}
 	}
 	
