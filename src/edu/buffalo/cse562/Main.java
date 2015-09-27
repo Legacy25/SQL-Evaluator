@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
+import edu.buffalo.cse562.operators.NullOperator;
 import edu.buffalo.cse562.operators.Operator;
 
 public class Main {	
@@ -186,7 +187,11 @@ public class Main {
 		for(int i = 0; i < sqlFiles.size(); i++) {
 			File f = sqlFiles.get(i);
 			long localStart = System.nanoTime();
-			parseTreeList.add(ParseTreeGenerator.generate(DATADIRS, f));
+			Operator parseTree = ParseTreeGenerator.generate(DATADIRS, f);
+			if(parseTree == null) {
+				parseTree = new NullOperator();
+			}
+			parseTreeList.add(parseTree);
 			
 			/* Compute the generation time for this query */
 			qgenTime.add((double) (System.nanoTime() - localStart)/BILLION);
@@ -202,20 +207,18 @@ public class Main {
 			 * and add it to the generation time 
 			 */
 			qgenTime.set(i, qgenTime.get(i) + (double) (System.nanoTime() - localStart)/BILLION);
-			
-			/*
-			 * Display the query plan
-			 */
-			if(Main.DEBUG) {
-				if(parseTreeList.size() > 0) {
-					parseTreeList.forEach(new Consumer<Operator>() {
-						@Override
-						public void accept(Operator t) {
-							System.out.println(t.getSchema());
-						}
-					});
+		}
+		
+		/*
+		 * Display the query plans
+		 */
+		if(Main.DEBUG) {
+			parseTreeList.forEach(new Consumer<Operator>() {
+				@Override
+				public void accept(Operator t) {
+					System.out.println(t.getSchema());
 				}
-			}
+			});
 		}
 		
 		/*
