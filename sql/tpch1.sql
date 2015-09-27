@@ -1,4 +1,3 @@
--
 SELECT
   returnflag,
   linestatus,
