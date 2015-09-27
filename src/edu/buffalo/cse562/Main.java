@@ -207,12 +207,14 @@ public class Main {
 			 * Display the query plan
 			 */
 			if(Main.DEBUG) {
-				parseTreeList.forEach(new Consumer<Operator>() {
-					@Override
-					public void accept(Operator t) {
-						System.out.println(t.getSchema());
-					}
-				});
+				if(parseTreeList.size() > 0) {
+					parseTreeList.forEach(new Consumer<Operator>() {
+						@Override
+						public void accept(Operator t) {
+							System.out.println(t.getSchema());
+						}
+					});
+				}
 			}
 		}
 		
